@@ -1,4 +1,5 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
+    KeyboardButton, ReplyKeyboardMarkup
 
 # кластеры
 ZERO_CLUSTER = InlineKeyboardButton('0', callback_data='0')
@@ -14,16 +15,24 @@ start_menu_merch = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='МП🤩'), KeyboardButton(text='Практики🗣')],
     [KeyboardButton(text='Магазин🏦')]],
     resize_keyboard=True,
-    one_time_keyboard=True,
-    input_field_placeholder='Выберите команду из меню')
+    one_time_keyboard=True)
 
-stuff_menu_merch = ReplyKeyboardMarkup(keyboard=[
+tools_menu_merch = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Планограммы🧮'), KeyboardButton(text='ДМП📦')],
     [KeyboardButton(text='Картина Успеха🎉')]],
     resize_keyboard=True,
-    one_time_keyboard=True,
-    input_field_placeholder='Выберите команду из меню')
+    one_time_keyboard=True)
 
+kpi_menu_merch = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Мой KPI📈'), KeyboardButton(text='KPI TT🏬')]],
+    resize_keyboard=True,
+    one_time_keyboard=True)
+
+ratings_menu_merch = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Мои рейтинги📊'),
+     KeyboardButton(text='Результаты тестов📋')]],
+    resize_keyboard=True,
+    one_time_keyboard=True)
 
 # универсальная кнопка назад
 back = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Назад')]],
@@ -35,7 +44,8 @@ back = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Назад')]],
 def get_list_inline(data):
     get_list_keyboard = InlineKeyboardMarkup()
     for i in data:
-        get_list_keyboard.insert(InlineKeyboardButton(f'{i}', callback_data=f'{i}'))
+        get_list_keyboard.insert(
+            InlineKeyboardButton(f'{i}', callback_data=f'{i}'))
     return get_list_keyboard
 
 

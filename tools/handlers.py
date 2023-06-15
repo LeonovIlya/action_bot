@@ -9,6 +9,12 @@ from utils import keyboards, queries
 from utils.states import UserState
 
 
+async def tools_menu(message: types.Message):
+    await message.answer(text='Выберите пункт из меню:',
+                         reply_markup=keyboards.tools_menu_merch)
+    await UserState.tools_menu.set()
+
+
 # выбираем кластер
 async def planogram_choice(message: types.Message):
     await message.answer(text='Выберите кластер:',
@@ -120,9 +126,31 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
         logging.info(f'{error}')
 
 
+async def get_dmp(message: types.Message, state: FSMContext):
+    await message.answer(text='Данная функция в разработке',
+                         reply_markup=keyboards.back)
+    await state.finish()
+
+
+async def get_picture_success(message: types.Message, state: FSMContext):
+    await message.answer(text='Данная функция в разработке',
+                         reply_markup=keyboards.back)
+    await state.finish()
+
+
 # компануем в обработчик
 def register_handlers_planogram(dp: Dispatcher):
-    dp.register_message_handler(planogram_choice, text='Планограммы🧮')
+    dp.register_message_handler(tools_menu,
+                                text='Инструменты🛠')
+    dp.register_message_handler(planogram_choice,
+                                text='Планограммы🧮',
+                                state=UserState.tools_menu)
+    dp.register_message_handler(get_dmp,
+                                text='ДМП📦',
+                                state=UserState.tools_menu)
+    dp.register_message_handler(get_picture_success,
+                                text='Картина Успеха🎉',
+                                state=UserState.tools_menu)
     dp.register_callback_query_handler(cluster_choice,
                                        state=UserState.plan_cluster)
     dp.register_callback_query_handler(shop_choice, state=UserState.plan_shop)

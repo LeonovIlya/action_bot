@@ -1,11 +1,10 @@
 import asyncio
 import logging
 
-from aiogram import Bot, Dispatcher
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-
 from loader import dp, db, bot
-from planograms.handlers import register_handlers_planogram
+from kpi.handlers import register_handlers_kpi
+from ratings.handlers import register_handlers_ratings
+from tools.handlers import register_handlers_planogram
 from users.handlers import register_handlers_users
 
 
@@ -25,6 +24,8 @@ async def start():
 
     register_handlers_planogram(dp)
     register_handlers_users(dp)
+    register_handlers_kpi(dp)
+    register_handlers_ratings(dp)
 
     await dp.start_polling(bot)
 
