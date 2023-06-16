@@ -14,8 +14,8 @@ async def kpi_menu(message: types.Message):
 
 async def kpi_mr(message: types.Message, state: FSMContext):
     user_tg_id = message.from_user.id
-    query = await db.get_kpi_mr(queries.kpi_mr_query,
-                                tg_id=user_tg_id)
+    query = await db.get_all(queries.kpi_mr_query,
+                             tg_id=user_tg_id)
     await message.answer(text=f'<b>Ваш KPI (план | факт | процент):</b>\n'
                               f'<b><u>PSS:</u></b> {query[0]:.2%} |'
                               f' {query[1]:.2%}'

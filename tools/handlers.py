@@ -1,5 +1,6 @@
 import logging
-from pathlib import Path
+import aiofiles
+from aiopath import AsyncPath
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
@@ -7,6 +8,11 @@ from aiogram.dispatcher import FSMContext
 from loader import db
 from utils import keyboards, queries
 from utils.states import UserState
+
+
+CLUSTERS = ('0', '2')
+SHOPS = ('Верный', 'Дикси', 'Лента', 'Магнит', 'Перекресток', 'Пятерочка')
+MAGNITS = ('Магнит ГМ', 'Магнит МК', 'Магнит ММ')
 
 
 async def tools_menu(message: types.Message):
@@ -17,8 +23,9 @@ async def tools_menu(message: types.Message):
 
 # выбираем кластер
 async def planogram_choice(message: types.Message):
+    keyboard = await keyboards.get_inline_buttons(CLUSTERS)
     await message.answer(text='Выберите кластер:',
-                         reply_markup=keyboards.CLUSTERS_ALL)
+                         reply_markup=keyboard)
     await UserState.plan_cluster.set()
 
 
@@ -26,12 +33,12 @@ async def planogram_choice(message: types.Message):
 async def cluster_choice(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     await state.update_data(cluster=callback.data)
-    data = await db.get_stuff_list(queries.shop_list)
+    keyboard = await keyboards.get_inline_buttons(SHOPS)
     await callback.bot.edit_message_text(
         chat_id=callback.from_user.id,
         message_id=callback.message.message_id,
         text='Выберите торговую сеть:',
-        reply_markup=keyboards.get_list_inline(data))
+        reply_markup=keyboard)
     await UserState.plan_shop.set()
 
 
@@ -39,59 +46,21 @@ async def cluster_choice(callback: types.CallbackQuery, state: FSMContext):
 async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     if callback.data == 'Магнит':
-        data = await db.get_stuff_list(queries.magnit_list,
-                                       chain_name=callback.data)
+        keyboard = await keyboards.get_inline_buttons(MAGNITS)
         await callback.bot.edit_message_text(
             chat_id=callback.from_user.id,
             message_id=callback.message.message_id,
             text='Выберите формат Магнита:',
-            reply_markup=keyboards.get_list_inline(
-                data))
-
-    elif callback.data == 'Магнит ММ':
+            reply_markup=keyboard)
+    else:
         data = await db.get_stuff_list(queries.name_query,
                                        shop_name=callback.data)
+        keyboard = await keyboards.get_inline_buttons(data)
         await callback.bot.edit_message_text(
             chat_id=callback.from_user.id,
             message_id=callback.message.message_id,
             text='Выберите планограмму:',
-            reply_markup=keyboards.get_list_inline(
-                data))
-        await state.update_data(shop_name=callback.data)
-        await UserState.plan_name.set()
-
-    elif callback.data == 'Магнит ГМ':
-        data = await db.get_stuff_list(queries.name_query,
-                                       shop_name=callback.data)
-        await callback.bot.edit_message_text(
-            chat_id=callback.from_user.id,
-            message_id=callback.message.message_id, text='Выберите '
-                                                         'планограмму:',
-            reply_markup=keyboards.get_list_inline(
-                data))
-        await state.update_data(shop_name=callback.data)
-        await UserState.plan_name.set()
-
-    elif callback.data == 'Магнит МК':
-        data = await db.get_stuff_list(queries.name_query,
-                                       shop_name=callback.data)
-        await callback.bot.edit_message_text(
-            chat_id=callback.from_user.id,
-            message_id=callback.message.message_id, text='Выберите '
-                                                         'планограмму:',
-            reply_markup=keyboards.get_list_inline(
-                data))
-        await state.update_data(shop_name=callback.data)
-        await UserState.plan_name.set()
-    else:
-        data = await db.get_stuff_list(queries.name_query,
-                                       shop_name=callback.data)
-        await callback.bot.edit_message_text(
-            chat_id=callback.from_user.id,
-            message_id=callback.message.message_id, text='Выберите '
-                                                         'планограмму:',
-            reply_markup=keyboards.get_list_inline(
-                data))
+            reply_markup=keyboard)
         await state.update_data(shop_name=callback.data)
         await UserState.plan_name.set()
 
@@ -104,13 +73,13 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     try:
         await callback.message.answer(text='Ожидайте отправки файла...')
-        data = await db.get_stuff(queries.file_query, name=name,
-                                  shop_name=data['shop_name'],
-                                  cluster=data['cluster'])
-        file = Path(data)
-        if file.is_file():
+        data = await db.get_one(queries.file_query, name=name,
+                                shop_name=data['shop_name'],
+                                cluster=data['cluster'])
+        file = AsyncPath(data)
+        if await file.is_file():
             await callback.message.answer(text='Отправляю файл...')
-            with open(data, 'rb') as file:
+            async with aiofiles.open(data, 'rb') as file:
                 await callback.message.answer_document(file,
                                                        reply_markup=keyboards.back)
                 await state.finish()
@@ -120,10 +89,10 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
             await state.finish()
     except Exception as error:
         await callback.message.answer(
-            text='Какая-то ошибка!\nПопробуйте сначала!\nError: %s' % error,
+            text=f'Какая-то ошибка!\nПопробуйте сначала!\nError: {error}',
             reply_markup=keyboards.back)
         await state.finish()
-        logging.info(f'{error}')
+        logging.info('%error', error)
 
 
 async def get_dmp(message: types.Message, state: FSMContext):

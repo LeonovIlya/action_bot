@@ -1,13 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
     KeyboardButton, ReplyKeyboardMarkup
 
-# кластеры
-ZERO_CLUSTER = InlineKeyboardButton('0', callback_data='0')
-TWO_CLUSTER = InlineKeyboardButton('2', callback_data='2')
-
-# группируем кластеры в инлайн клаву
-CLUSTERS_ALL = InlineKeyboardMarkup().add(ZERO_CLUSTER, TWO_CLUSTER)
-
 # стартовое меню для мерчендайзеров
 start_menu_merch = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Инструменты🛠'), KeyboardButton(text='KPI📈')],
@@ -41,17 +34,9 @@ back = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Назад')]],
 
 
 # формируем инлайн клавиатуру
-def get_list_inline(data):
-    get_list_keyboard = InlineKeyboardMarkup()
+async def get_inline_buttons(data):
+    get_inline_keyboard = InlineKeyboardMarkup()
     for i in data:
-        get_list_keyboard.insert(
+        get_inline_keyboard.insert(
             InlineKeyboardButton(f'{i}', callback_data=f'{i}'))
-    return get_list_keyboard
-
-
-# формируем обычную клавиатуру
-def get_list_reply(data):
-    get_list_keyboard = ReplyKeyboardMarkup()
-    for i in data:
-        get_list_keyboard.insert(KeyboardButton(f'{i}'))
-    return get_list_keyboard
+    return get_inline_keyboard

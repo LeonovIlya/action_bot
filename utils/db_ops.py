@@ -9,17 +9,17 @@ class BotDB:
         self.connection = None
         self._db_file = db_file
 
+    async def create_connection(self):
+        if self.connection is None:
+            self.connection = await asq.connect(self._db_file)
+        return self.connection
+
     async def create_table(self):
         async with asq.connect(self._db_file) as conn:
             await conn.executescript(tables)
             await conn.commit()
             logging.info('tables created')
             return None
-
-    async def create_connection(self):
-        if self.connection is None:
-            self.connection = await asq.connect(self._db_file)
-        return self.connection
 
     async def close(self) -> None:
         if self.connection is not None:
@@ -43,7 +43,7 @@ class BotDB:
                 result = [(i[0], str(i[1])) for i in fetch]
             return result
 
-    async def get_stuff(self, query: str, **kwargs):
+    async def get_one(self, query: str, **kwargs):
         if self.connection is None:
             await self.create_connection()
         query += ' WHERE ' + ' AND '.join(
@@ -53,7 +53,7 @@ class BotDB:
             result = await cursor.fetchone()
             return result[0]
 
-    async def get_kpi_mr(self, query: str, **kwargs):
+    async def get_all(self, query: str, **kwargs):
         if self.connection is None:
             await self.create_connection()
         query += ' WHERE ' + ' AND '.join(

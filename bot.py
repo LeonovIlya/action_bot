@@ -20,7 +20,6 @@ async def start():
     logger.info("Starting bot")
 
     await db.create_connection()
-    await db.create_table()
 
     register_handlers_planogram(dp)
     register_handlers_users(dp)

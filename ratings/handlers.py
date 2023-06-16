@@ -12,11 +12,11 @@ RATINGS_DICT = {'[%_pss]': '% PSS', '[%_osa]': '% OSA', '[%_tt]': '% TT',\
 async def get_result_rating(rating_name: str,
                             select_name: str,
                             tg_id: int):
-    return await db.get_stuff(
+    return await db.get_one(
         query=await queries.ratings_query(
             column_name=rating_name,
             where_name=select_name,
-            where_value=await db.get_stuff(
+            where_value=await db.get_one(
                 await queries.get_value_by_tg_id(select_name),
                 tg_id=tg_id)),
         tg_id=tg_id)
@@ -32,7 +32,7 @@ async def ratings_mr(message: types.Message):
     tg_id = message.from_user.id
 
     for i in RATINGS_DICT.keys():
-        result1 = await db.get_stuff(
+        result1 = await db.get_one(
             await queries.ratings_query_all(column_name=i),
             tg_id=tg_id)
         result2 = await get_result_rating(rating_name=i,
