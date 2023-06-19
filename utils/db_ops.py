@@ -36,19 +36,22 @@ class BotDB:
         else:
             values = ''
         async with self.connection.execute(query, values) as cursor:
-            fetch = await cursor.fetchall()
-            if int(len(fetch[0])) == 1:
-                result = [i[0] for i in fetch]
-            elif int(len(fetch[0])) == 2:
-                result = [(i[0], str(i[1])) for i in fetch]
+            result = await cursor.fetchall()
+            # if int(len(fetch[0])) == 1:
+            #     result = [i[0] for i in fetch]
+            # elif int(len(fetch[0])) == 2:
+            #     result = [(i[0], str(i[1])) for i in fetch]
             return result
 
     async def get_one(self, query: str, **kwargs):
         if self.connection is None:
             await self.create_connection()
-        query += ' WHERE ' + ' AND '.join(
-            ['' + k + ' = ?' for k in kwargs.keys()])
-        values = list(kwargs.values())
+        if kwargs:
+            query += ' WHERE ' + ' AND '.join(
+                ['' + k + ' = ?' for k in kwargs.keys()])
+            values = list(kwargs.values())
+        else:
+            values = ''
         async with self.connection.execute(query, values) as cursor:
             result = await cursor.fetchone()
             return result[0]
@@ -62,3 +65,11 @@ class BotDB:
         async with self.connection.execute(query, values) as cursor:
             result = await cursor.fetchall()
             return result[0]
+
+    async def post(self, query: str, **kwargs):
+        if self.connection is None:
+            await self.create_connection()
+        values = list(kwargs.values())
+        print(query, values)
+        await self.connection.execute(query, values)
+        await self.connection.commit()

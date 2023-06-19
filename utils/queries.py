@@ -4,6 +4,13 @@ magnit_list = "SELECT DISTINCT shop_name FROM planograms"
 name_query = "SELECT DISTINCT name FROM planograms"
 file_query = "SELECT file_link FROM planograms"
 
+BP_NAME = "SELECT name, desc, datetime_start, datetime_stop, pics FROM " \
+          "best_practice"
+MAX_ID = "SELECT MAX(id) FROM best_practice"
+
+INSERT_PRACTICE = "INSERT INTO best_practice (name, desc, user_added, " \
+                  "datetime_added, is_active, pics) VALUES (?, ?, ?, ?, ?, ?)"
+
 kpi_mr_query = "SELECT plan_pss, fact_pss, [%_pss], plan_osa, fact_osa, " \
                "[%_osa], plan_tt, fact_tt, [%_tt], plan_visits, fact_visits," \
                "[%_visits], isa_osa FROM users"

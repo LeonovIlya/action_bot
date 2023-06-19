@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from loader import dp, db, bot
+from best_practice.handlers import register_handlers_best_practice
 from kpi.handlers import register_handlers_kpi
 from ratings.handlers import register_handlers_ratings
 from tools.handlers import register_handlers_planogram
@@ -21,9 +22,11 @@ async def start():
 
     await db.create_connection()
 
-    register_handlers_planogram(dp)
-    register_handlers_users(dp)
+    register_handlers_best_practice(dp)
     register_handlers_kpi(dp)
+    register_handlers_planogram(dp)
+    register_handlers_ratings(dp)
+    register_handlers_users(dp)
     register_handlers_ratings(dp)
 
     await dp.start_polling(bot)

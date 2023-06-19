@@ -25,7 +25,7 @@ async def get_result_rating(rating_name: str,
 async def ratings_menu(message: types.Message):
     await message.answer(text='Выберите пункт из меню:',
                          reply_markup=keyboards.ratings_menu_merch)
-    await UserState.ratings_menu.set()
+    await UserState.ratings_menu_mr.set()
 
 
 async def ratings_mr(message: types.Message):
@@ -63,7 +63,7 @@ def register_handlers_ratings(dp: Dispatcher):
                                 text='Рейтинги📊')
     dp.register_message_handler(ratings_mr,
                                 text='Мои рейтинги📊',
-                                state=UserState.ratings_menu)
+                                state=UserState.ratings_menu_mr)
     dp.register_message_handler(tests_results_mr,
                                 text='Результаты тестов📋',
-                                state=UserState.ratings_menu)
+                                state=UserState.ratings_menu_mr)

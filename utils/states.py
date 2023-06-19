@@ -2,10 +2,11 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 
 
 class UserState(StatesGroup):
-    new_user = State()
-    auth_user = State()
+    auth_mr = State()
+    auth_kas = State()
+    auth_citimanager = State()
 
-    tools_menu = State()
+    tools_menu_mr = State()
 
     dmp = State()
     dmp_address_search = State()
@@ -15,6 +16,13 @@ class UserState(StatesGroup):
     plan_shop = State()
     plan_name = State()
 
-    kpi_menu = State()
+    kpi_menu_mr = State()
 
-    ratings_menu = State()
+    practice_menu_mr = State()
+    practice_menu_citimanager = State()
+
+    practice_add = State()
+    practice_add_desc = State()
+    practice_add_picture = State()
+
+    ratings_menu_mr = State()

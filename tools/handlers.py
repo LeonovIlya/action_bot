@@ -18,7 +18,7 @@ MAGNITS = ('Магнит ГМ', 'Магнит МК', 'Магнит ММ')
 async def tools_menu(message: types.Message):
     await message.answer(text='Выберите пункт из меню:',
                          reply_markup=keyboards.tools_menu_merch)
-    await UserState.tools_menu.set()
+    await UserState.tools_menu_mr.set()
 
 
 # выбираем кластер
@@ -113,13 +113,13 @@ def register_handlers_planogram(dp: Dispatcher):
                                 text='Инструменты🛠')
     dp.register_message_handler(planogram_choice,
                                 text='Планограммы🧮',
-                                state=UserState.tools_menu)
+                                state=UserState.tools_menu_mr)
     dp.register_message_handler(get_dmp,
                                 text='ДМП📦',
-                                state=UserState.tools_menu)
+                                state=UserState.tools_menu_mr)
     dp.register_message_handler(get_picture_success,
                                 text='Картина Успеха🎉',
-                                state=UserState.tools_menu)
+                                state=UserState.tools_menu_mr)
     dp.register_callback_query_handler(cluster_choice,
                                        state=UserState.plan_cluster)
     dp.register_callback_query_handler(shop_choice, state=UserState.plan_shop)

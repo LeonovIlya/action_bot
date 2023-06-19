@@ -9,7 +9,7 @@ from utils.states import UserState
 async def kpi_menu(message: types.Message):
     await message.answer(text='Выберите пункт из меню:',
                          reply_markup=keyboards.kpi_menu_merch)
-    await UserState.kpi_menu.set()
+    await UserState.kpi_menu_mr.set()
 
 
 async def kpi_mr(message: types.Message, state: FSMContext):
@@ -44,7 +44,7 @@ def register_handlers_kpi(dp: Dispatcher):
                                 text='KPI📈')
     dp.register_message_handler(kpi_mr,
                                 text='Мой KPI📈',
-                                state=UserState.kpi_menu)
+                                state=UserState.kpi_menu_mr)
     dp.register_message_handler(kpi_tt,
                                 text='KPI TT🏬',
-                                state=UserState.kpi_menu)
+                                state=UserState.kpi_menu_mr)

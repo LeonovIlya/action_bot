@@ -58,4 +58,28 @@ dmp_text REAL,
 [%_dmp] REAL,
 dmp_comm TEXT
 );
+CREATE TABLE best_practice(
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+name TEXT,
+desc TEXT,
+user_added TEXT REFERENCES users (id),
+datetime_added TEXT,
+datetime_start TEXT,
+datetime_stop TEXT,
+is_active INTEGER,
+pics TEXT
+);
+CREATE TABLE best_practice_mr(
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+best_practice REFERENCES best_practice (id) ON DELETE CASCADE,
+user_added TEXT REFERENCES users (id) ON DELETE CASCADE,
+datetime_added TEXT,
+desc TEXT,
+pics TEXT,
+likes INTEGER,
+unlikes INTEGER,
+approved INTEGER,
+active INTEGER
+);
+
 '''

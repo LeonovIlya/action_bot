@@ -27,6 +27,17 @@ ratings_menu_merch = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
+practice_menu_merch = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Текущие практики🎯')],
+    [KeyboardButton(text='Участвовать📸')],
+    [KeyboardButton(text='Предложения📝')]
+])
+
+practice_menu_citimanager = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Управлять текущими')],
+    [KeyboardButton(text='Добавить новую')]
+])
+
 # универсальная кнопка назад
 back = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Назад')]],
                            resize_keyboard=True,
