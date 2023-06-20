@@ -26,7 +26,7 @@ class BotDB:
             await self.connection.close()
             self.connection = None
 
-    async def get_stuff_list(self, query: str, **kwargs):
+    async def get_list(self, query: str, **kwargs):
         if self.connection is None:
             await self.create_connection()
         if kwargs:
@@ -37,11 +37,7 @@ class BotDB:
             values = ''
         async with self.connection.execute(query, values) as cursor:
             result = await cursor.fetchall()
-            # if int(len(fetch[0])) == 1:
-            #     result = [i[0] for i in fetch]
-            # elif int(len(fetch[0])) == 2:
-            #     result = [(i[0], str(i[1])) for i in fetch]
-            return result
+            return [i for i in result]
 
     async def get_one(self, query: str, **kwargs):
         if self.connection is None:
@@ -53,23 +49,24 @@ class BotDB:
         else:
             values = ''
         async with self.connection.execute(query, values) as cursor:
-            result = await cursor.fetchone()
-            return result[0]
+            return await cursor.fetchone()
 
     async def get_all(self, query: str, **kwargs):
         if self.connection is None:
             await self.create_connection()
-        query += ' WHERE ' + ' AND '.join(
-            ['' + k + ' = ?' for k in kwargs.keys()])
-        values = list(kwargs.values())
+        if kwargs:
+            query += ' WHERE ' + ' AND '.join(
+                ['' + k + ' = ?' for k in kwargs.keys()])
+            values = list(kwargs.values())
+        else:
+            values = ''
         async with self.connection.execute(query, values) as cursor:
-            result = await cursor.fetchall()
-            return result[0]
+            return await cursor.fetchall()
 
     async def post(self, query: str, **kwargs):
         if self.connection is None:
             await self.create_connection()
         values = list(kwargs.values())
-        print(query, values)
         await self.connection.execute(query, values)
         await self.connection.commit()
+        logging.info(f'NEW INSERT:\nQUERY: {query}\nVALUES: {values}')

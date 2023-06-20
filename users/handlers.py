@@ -1,29 +1,85 @@
 from aiogram import types, Dispatcher
+from aiogram.dispatcher import FSMContext
 
 from loader import db
 from utils import keyboards, queries
 from utils.states import UserState
 
 
+async def get_auth_level_state(user_tg_id: int) -> UserState:
+    auth_level = await db.get_one(await queries.get_value('position'),
+                                  tg_id=user_tg_id)
+    match auth_level[0]:
+        case 'mr':
+            return await UserState.auth_mr.set()
+        case 'kas':
+            return await UserState.auth_kas.set()
+        case 'citimanager':
+            return await UserState.auth_citimanager.set()
+
+
+async def start_no_auth(message: types.Message):
+    auth = bool(await db.get_one(await queries.get_value('tg_id'),
+                                 tg_id=int(message.from_user.id)))
+    if auth:
+        await message.answer(text='Выберите пункт из меню:',
+                             reply_markup=keyboards.start_menu_merch)
+        await get_auth_level_state(message.from_user.id)
+    else:
+        await message.answer(text='Вас приветствует чат-бот компании '
+                                  '"Action"\nДля начала работы с ботом нажмите'
+                                  ' /start')
+
+
+async def start_auth(message: types.Message):
+    await message.answer(text='Введите ваш логин:')
+    await UserState.start_auth_get_login.set()
+
+
+async def login_check(message: types.Message, state: FSMContext):
+    login = bool(await db.get_one(await queries.get_value('ter_num'),
+                                  ter_num=str(message.text)))
+    if login:
+        await state.update_data(ter_num=str(message.text))
+        await message.answer(text='Введите ваш пароль:')
+        await UserState.start_auth_get_password.set()
+    else:
+        await message.answer(text='Кажется вы ошиблись, попробуйте еще раз!')
+
+
+async def password_check(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    password = bool(await db.get_one(await queries.get_value('password'),
+                                     ter_num=str(data['ter_num']),
+                                     password=str(message.text)))
+    if password:
+        await db.post(queries.UPDATE_TG_ID,
+                      tg_id=int(message.from_user.id),
+                      ter_num=str(data['ter_num']))
+        username = await db.get_one(await queries.get_value('username'),
+                                    tg_id=int(message.from_user.id))
+        await message.answer(text=f'Добро пожаловать,\n'
+                                  f'<b>{username[0]}!</b>\n\n'
+                                  f'Выберите пункт из меню:',
+                             reply_markup=keyboards.start_menu_merch)
+        await get_auth_level_state(message.from_user.id)
+
+
 # стартовое меню бота
-async def start_menu(message: types.Message):
+async def start_menu_from_button(message: types.Message):
     await message.answer(text='Выберите пункт из меню:',
                          reply_markup=keyboards.start_menu_merch)
-    auth_level = await db.get_one(await queries.get_value_by_tg_id('position'),
-                                  tg_id=message.from_user.id)
-    print(auth_level)
-
-    match auth_level:
-        case 'mr':
-            await UserState.auth_mr.set()
-        case 'kas':
-            await UserState.auth_kase.set()
-        case 'citimanager':
-            await UserState.auth_citimanager.set()
+    await get_auth_level_state(message.from_user.id)
 
 
 # компануем в обработчик
 def register_handlers_users(dp: Dispatcher):
-    dp.register_message_handler(start_menu,
-                                text="Назад",
+    dp.register_message_handler(start_auth, commands=['start'])
+    dp.register_message_handler(start_no_auth)
+    dp.register_message_handler(login_check,
+                                state=UserState.start_auth_get_login)
+    dp.register_message_handler(password_check,
+                                state=UserState.start_auth_get_password)
+    dp.register_message_handler(start_menu_from_button,
+                                text='Главное меню📱',
                                 state='*')

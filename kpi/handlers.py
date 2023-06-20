@@ -12,11 +12,11 @@ async def kpi_menu(message: types.Message):
     await UserState.kpi_menu_mr.set()
 
 
-async def kpi_mr(message: types.Message, state: FSMContext):
+async def kpi_mr(message: types.Message):
     user_tg_id = message.from_user.id
-    query = await db.get_all(queries.kpi_mr_query,
+    query = await db.get_one(queries.kpi_mr_query,
                              tg_id=user_tg_id)
-    await message.answer(text=f'<b>Ваш KPI (план | факт | процент):</b>\n'
+    await message.answer(text=f'<b>Ваш KPI (план | факт | выполнение):</b>\n'
                               f'<b><u>PSS:</u></b> {query[0]:.2%} |'
                               f' {query[1]:.2%}'
                               f' | {query[2]:.2%}\n'
@@ -30,18 +30,20 @@ async def kpi_mr(message: types.Message, state: FSMContext):
                               f' {query[11]:.2%}\n'
                               f'<b><u>ISA-OSA:</u></b> {query[12]}',
                          reply_markup=keyboards.back)
-    await state.finish()
 
 
-async def kpi_tt(message: types.Message, state: FSMContext):
+async def kpi_tt(message: types.Message):
     await message.answer(text='Данная функция в разработке',
                          reply_markup=keyboards.back)
-    await state.finish()
 
 
 def register_handlers_kpi(dp: Dispatcher):
     dp.register_message_handler(kpi_menu,
-                                text='KPI📈')
+                                text='Назад↩',
+                                state=UserState.kpi_menu_mr)
+    dp.register_message_handler(kpi_menu,
+                                text='KPI📈',
+                                state='*')
     dp.register_message_handler(kpi_mr,
                                 text='Мой KPI📈',
                                 state=UserState.kpi_menu_mr)

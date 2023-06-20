@@ -9,14 +9,16 @@ BP_NAME = "SELECT name, desc, datetime_start, datetime_stop, pics FROM " \
 MAX_ID = "SELECT MAX(id) FROM best_practice"
 
 INSERT_PRACTICE = "INSERT INTO best_practice (name, desc, user_added, " \
-                  "datetime_added, is_active, pics) VALUES (?, ?, ?, ?, ?, ?)"
+                  "datetime_added, datetime_start, datetime_stop, is_active, pics) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+
+UPDATE_TG_ID = "UPDATE users SET tg_id = ? WHERE ter_num = ?"
 
 kpi_mr_query = "SELECT plan_pss, fact_pss, [%_pss], plan_osa, fact_osa, " \
                "[%_osa], plan_tt, fact_tt, [%_tt], plan_visits, fact_visits," \
                "[%_visits], isa_osa FROM users"
 
 
-async def get_value_by_tg_id(value: str) -> str:
+async def get_value(value: str) -> str:
     return f"SELECT {value} FROM users"
 
 

@@ -53,8 +53,9 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
             text='Выберите формат Магнита:',
             reply_markup=keyboard)
     else:
-        data = await db.get_stuff_list(queries.name_query,
-                                       shop_name=callback.data)
+        data = await db.get_all(queries.name_query,
+                                shop_name=callback.data)
+        data = [i[0] for i in data]
         keyboard = await keyboards.get_inline_buttons(data)
         await callback.bot.edit_message_text(
             chat_id=callback.from_user.id,
@@ -76,41 +77,43 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
         data = await db.get_one(queries.file_query, name=name,
                                 shop_name=data['shop_name'],
                                 cluster=data['cluster'])
-        file = AsyncPath(data)
+        file = AsyncPath(str(data[0]))
         if await file.is_file():
             await callback.message.answer(text='Отправляю файл...')
-            async with aiofiles.open(data, 'rb') as file:
+            async with aiofiles.open(str(data[0]), 'rb') as file:
                 await callback.message.answer_document(file,
                                                        reply_markup=keyboards.back)
-                await state.finish()
+                await UserState.tools_menu_mr.set()
         else:
             await callback.message.answer(text='Файл не найден!',
                                           reply_markup=keyboards.back)
-            await state.finish()
+            await UserState.tools_menu_mr.set()
     except Exception as error:
         await callback.message.answer(
             text=f'Какая-то ошибка!\nПопробуйте сначала!\nError: {error}',
             reply_markup=keyboards.back)
-        await state.finish()
+        await UserState.tools_menu_mr.set()
         logging.info('%error', error)
 
 
-async def get_dmp(message: types.Message, state: FSMContext):
+async def get_dmp(message: types.Message):
     await message.answer(text='Данная функция в разработке',
                          reply_markup=keyboards.back)
-    await state.finish()
 
 
-async def get_picture_success(message: types.Message, state: FSMContext):
+async def get_picture_success(message: types.Message):
     await message.answer(text='Данная функция в разработке',
                          reply_markup=keyboards.back)
-    await state.finish()
 
 
 # компануем в обработчик
-def register_handlers_planogram(dp: Dispatcher):
+def register_handlers_tools(dp: Dispatcher):
     dp.register_message_handler(tools_menu,
-                                text='Инструменты🛠')
+                                text='Назад↩',
+                                state=UserState.tools_menu_mr)
+    dp.register_message_handler(tools_menu,
+                                text='Инструменты🛠',
+                                state='*')
     dp.register_message_handler(planogram_choice,
                                 text='Планограммы🧮',
                                 state=UserState.tools_menu_mr)

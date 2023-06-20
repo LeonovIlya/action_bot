@@ -12,36 +12,51 @@ start_menu_merch = ReplyKeyboardMarkup(keyboard=[
 
 tools_menu_merch = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Планограммы🧮'), KeyboardButton(text='ДМП📦')],
-    [KeyboardButton(text='Картина Успеха🎉')]],
+    [KeyboardButton(text='Картина Успеха🎉')],
+    [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True)
 
 kpi_menu_merch = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='Мой KPI📈'), KeyboardButton(text='KPI TT🏬')]],
+    [KeyboardButton(text='Мой KPI📈'), KeyboardButton(text='KPI TT🏬')],
+    [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True)
 
 ratings_menu_merch = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Мои рейтинги📊'),
-     KeyboardButton(text='Результаты тестов📋')]],
+     KeyboardButton(text='Результаты тестов📋')],
+    [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True)
 
 practice_menu_merch = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Текущие практики🎯')],
     [KeyboardButton(text='Участвовать📸')],
-    [KeyboardButton(text='Предложения📝')]
-])
+    [KeyboardButton(text='Предложения📝')],
+    [KeyboardButton(text='Главное меню📱')]],
+    resize_keyboard=True,
+    one_time_keyboard=True
+)
 
 practice_menu_citimanager = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='Управлять текущими')],
-    [KeyboardButton(text='Добавить новую')]
-])
+    [KeyboardButton(text='Управлять текущими🔀')],
+    [KeyboardButton(text='Добавить новую➕')],
+    [KeyboardButton(text='Главное меню📱')]],
+    resize_keyboard=True,
+    one_time_keyboard=True
+)
 
 # универсальная кнопка назад
-back = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Назад')]],
-                           resize_keyboard=True,
-                           one_time_keyboard=True)
+back = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text='Назад↩')]],
+    resize_keyboard=True,
+    one_time_keyboard=True)
+
+main_menu = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text='Главное меню📱')]],
+    resize_keyboard=True,
+    one_time_keyboard=True)
 
 
 # формируем инлайн клавиатуру
