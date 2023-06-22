@@ -1,5 +1,6 @@
-import logging
 import aiofiles
+import logging
+import time
 from aiopath import AsyncPath
 
 from aiogram import Dispatcher, types
@@ -31,7 +32,7 @@ async def planogram_choice(message: types.Message):
 
 # выбираем торговую сеть
 async def cluster_choice(callback: types.CallbackQuery, state: FSMContext):
-    await callback.answer()
+    await callback.bot.answer_callback_query(callback.id)
     await state.update_data(cluster=callback.data)
     keyboard = await keyboards.get_inline_buttons(SHOPS)
     await callback.bot.edit_message_text(
@@ -44,7 +45,7 @@ async def cluster_choice(callback: types.CallbackQuery, state: FSMContext):
 
 # выбираем формат магазина
 async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
-    await callback.answer()
+    await callback.bot.answer_callback_query(callback.id)
     if callback.data == 'Магнит':
         keyboard = await keyboards.get_inline_buttons(MAGNITS)
         await callback.bot.edit_message_text(
@@ -68,18 +69,22 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
 
 # формируем запрос к бд, получаем ответ
 async def name_choice(callback: types.CallbackQuery, state: FSMContext):
-    await callback.answer()
+    await callback.bot.answer_callback_query(callback.id)
     await callback.message.delete()
-    name = callback.data
-    data = await state.get_data()
     try:
-        await callback.message.answer(text='Ожидайте отправки файла...')
+        time.sleep(0.5)
+        await callback.answer(text='Ожидайте отправки файла...',
+                              show_alert=False)
+        name = callback.data
+        data = await state.get_data()
         data = await db.get_one(queries.file_query, name=name,
                                 shop_name=data['shop_name'],
                                 cluster=data['cluster'])
         file = AsyncPath(str(data[0]))
         if await file.is_file():
-            await callback.message.answer(text='Отправляю файл...')
+            time.sleep(0.5)
+            await callback.answer(text='Отправляю файл...',
+                                  show_alert=False)
             async with aiofiles.open(str(data[0]), 'rb') as file:
                 await callback.message.answer_document(file,
                                                        reply_markup=keyboards.back)

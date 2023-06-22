@@ -32,7 +32,6 @@ ratings_menu_merch = ReplyKeyboardMarkup(keyboard=[
 
 practice_menu_merch = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Текущие практики🎯')],
-    [KeyboardButton(text='Участвовать📸')],
     [KeyboardButton(text='Предложения📝')],
     [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,

@@ -24,6 +24,9 @@ class UserState(StatesGroup):
     practice_menu_mr = State()
     practice_menu_citimanager = State()
 
+    practice_take_part_mr = State()
+    practice_take_part_mr_confirm = State()
+
     practice_add = State()
     practice_add_desc = State()
     practice_add_start = State()

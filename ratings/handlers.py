@@ -5,7 +5,7 @@ from loader import db
 from utils import keyboards, queries
 from utils.states import UserState
 
-RATINGS_DICT = {'[%_pss]': '% PSS', '[%_osa]': '% OSA', '[%_tt]': '% TT', \
+RATINGS_DICT = {'[%_pss]': '% PSS', '[%_osa]': '% OSA', '[%_tt]': '% TT',
                 '[%_visits]': '% Visits'}
 
 
@@ -17,7 +17,8 @@ async def get_result_rating(rating_name: str,
             column_name=rating_name,
             where_name=select_name,
             where_value=(await db.get_one(
-                await queries.get_value(select_name),
+                await queries.get_value(value=select_name,
+                                        table='users'),
                 tg_id=tg_id))[0]),
         tg_id=tg_id)
 
@@ -34,16 +35,16 @@ async def ratings_mr(message: types.Message):
     for i in RATINGS_DICT.keys():
         result1 = await db.get_one(
             await queries.ratings_query_all(column_name=i),
-            tg_id=tg_id)
+            tg_id=int(tg_id))
         result2 = await get_result_rating(rating_name=i,
                                           select_name='region',
-                                          tg_id=tg_id)
+                                          tg_id=int(tg_id))
         result3 = await get_result_rating(rating_name=i,
                                           select_name='kas',
-                                          tg_id=tg_id)
+                                          tg_id=int(tg_id))
         result4 = await get_result_rating(rating_name=i,
                                           select_name='citimanager',
-                                          tg_id=tg_id)
+                                          tg_id=int(tg_id))
         await message.answer(text=f'<b>Ваше место по {RATINGS_DICT[i]}:</b>\n'
                                   f'<b>По КАС:</b> {result3[0]}\n'
                                   f'<b>По СитиМенеджеру:</b> {result4[0]}\n'

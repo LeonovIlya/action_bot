@@ -7,7 +7,8 @@ from utils.states import UserState
 
 
 async def get_auth_level_state(user_tg_id: int) -> UserState:
-    auth_level = await db.get_one(await queries.get_value('position'),
+    auth_level = await db.get_one(await queries.get_value(value='position',
+                                                          table='users'),
                                   tg_id=user_tg_id)
     match auth_level[0]:
         case 'mr':
@@ -19,12 +20,13 @@ async def get_auth_level_state(user_tg_id: int) -> UserState:
 
 
 async def start_no_auth(message: types.Message):
-    auth = bool(await db.get_one(await queries.get_value('tg_id'),
+    auth = bool(await db.get_one(await queries.get_value(value='tg_id',
+                                                         table='users'),
                                  tg_id=int(message.from_user.id)))
     if auth:
         await message.answer(text='Выберите пункт из меню:',
                              reply_markup=keyboards.start_menu_merch)
-        await get_auth_level_state(message.from_user.id)
+        await get_auth_level_state(int(message.from_user.id))
     else:
         await message.answer(text='Вас приветствует чат-бот компании '
                                   '"Action"\nДля начала работы с ботом нажмите'
@@ -37,7 +39,8 @@ async def start_auth(message: types.Message):
 
 
 async def login_check(message: types.Message, state: FSMContext):
-    login = bool(await db.get_one(await queries.get_value('ter_num'),
+    login = bool(await db.get_one(await queries.get_value(value='ter_num',
+                                                          table='users'),
                                   ter_num=str(message.text)))
     if login:
         await state.update_data(ter_num=str(message.text))
@@ -49,27 +52,35 @@ async def login_check(message: types.Message, state: FSMContext):
 
 async def password_check(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    password = bool(await db.get_one(await queries.get_value('password'),
+    password = bool(await db.get_one(await queries.get_value(value='password',
+                                                             table='users'),
                                      ter_num=str(data['ter_num']),
                                      password=str(message.text)))
     if password:
         await db.post(queries.UPDATE_TG_ID,
                       tg_id=int(message.from_user.id),
                       ter_num=str(data['ter_num']))
-        username = await db.get_one(await queries.get_value('username'),
+        username = await db.get_one(await queries.get_value(value='username',
+                                                            table='users'),
                                     tg_id=int(message.from_user.id))
         await message.answer(text=f'Добро пожаловать,\n'
                                   f'<b>{username[0]}!</b>\n\n'
                                   f'Выберите пункт из меню:',
                              reply_markup=keyboards.start_menu_merch)
-        await get_auth_level_state(message.from_user.id)
+        await get_auth_level_state(int(message.from_user.id))
 
 
 # стартовое меню бота
-async def start_menu_from_button(message: types.Message):
-    await message.answer(text='Выберите пункт из меню:',
-                         reply_markup=keyboards.start_menu_merch)
-    await get_auth_level_state(message.from_user.id)
+async def start_menu_from_button(message: types.Message, state: FSMContext):
+    try:
+        await get_auth_level_state(int(message.from_user.id))
+        await message.answer(text='Выберите пункт из меню:',
+                             reply_markup=keyboards.start_menu_merch)
+    except TypeError as error:
+        await message.answer(text='Кажется вы не авторизованы в боте!\n'
+                                  'Нажмите /start для авторизации!')
+        await state.finish()
+        logging.info(f'Auth error: {error}, user: {int(message.from_user.id)}')
 
 
 # компануем в обработчик
