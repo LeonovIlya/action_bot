@@ -68,7 +68,6 @@ async def get_current_practice(message: types.Message):
 
 
 async def take_part(callback: types.CallbackQuery, state: FSMContext):
-    await callback.bot.answer_callback_query(callback.id)
     bp_name = callback.data
     username = await db.get_one(await queries.get_value(value='username',
                                                         table='users'),
@@ -76,9 +75,10 @@ async def take_part(callback: types.CallbackQuery, state: FSMContext):
     check_part = bool(
         await db.get_one(
             await queries.get_value(
-                value='best_practice',
+                value='*',
                 table='best_practice_mr'),
-            username=str(username[0])))
+            username=str(username[0]),
+            best_practice=str(bp_name)))
     if check_part:
         await callback.answer(text='Вы уже участвуете!',
                               show_alert=False)
@@ -90,7 +90,7 @@ async def take_part(callback: types.CallbackQuery, state: FSMContext):
         confirm_keyboard.insert(
             InlineKeyboardButton('Нет',
                                  callback_data='bp_no'))
-        await state.update_data(bp_name=callback.data)
+        await state.update_data(bp_name=str(bp_name))
         await callback.message.answer(text=f'Вы уверены, что хотите '
                                            f'участвовать в практике:\n'
                                            f'<b>{bp_name}?</b>',
@@ -98,14 +98,41 @@ async def take_part(callback: types.CallbackQuery, state: FSMContext):
         await UserState.practice_take_part_mr_confirm.set()
 
 
-async def take_part_confirmation(callback: types.CallbackQuery,
-                                 state: FSMContext):
-    await callback.answer()
+async def take_part_confirmation(callback: types.CallbackQuery):
+    await callback.bot.answer_callback_query(callback.id)
     if callback.data == 'bp_yes':
-        pass
+        await callback.message.answer(text='Отправьте фотографию:')
+        await UserState.practice_take_part_mr_send.set()
     if callback.data == 'bp_no':
         await callback.message.delete()
         await UserState.practice_menu_mr.set()
+
+
+async def take_part_take_photo(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    bp_name = data['bp_name']
+    tg_id = message.from_user.id
+    bp_id = await db.get_one(
+        await queries.get_value(
+            value='id',
+            table='best_practice'),
+        name=bp_name)
+
+    destination = f'./files/best_practice/{int(bp_id[0])}/{int(tg_id)}.jpg'
+    await message.photo[-1].download(destination_file=destination,
+                                     make_dirs=True)
+    username = await db.get_one(
+        await queries.get_value(
+            value='username',
+            table='users'),
+        tg_id=int(message.from_user.id))
+    await db.post(queries.INSERT_PRACTICE_MR,
+                  best_practice=str(bp_name),
+                  username=str(username[0]),
+                  datetime_added=datetime.datetime.now(),
+                  pics=str(destination))
+    await message.answer(text='Ваше заявка принята, ожидайте решения!',
+                         reply_markup=keyboards.back)
 
 
 async def make_suggest(message: types.Message):
@@ -208,10 +235,15 @@ def register_handlers_best_practice(dp: Dispatcher):
                                 state=UserState.practice_menu_mr)
     dp.register_message_handler(practice_menu_mr,
                                 text='Назад↩',
+                                state=UserState.practice_take_part_mr_send)
+
+    dp.register_message_handler(practice_menu_mr,
+                                text='Назад↩',
                                 state=UserState.practice_menu_citimanager)
     dp.register_message_handler(practice_menu_mr,
                                 text='Назад↩',
                                 state=UserState.practice_add_picture)
+
     dp.register_message_handler(practice_menu_mr,
                                 text='Практики🗣',
                                 state=UserState.auth_mr)
@@ -229,6 +261,9 @@ def register_handlers_best_practice(dp: Dispatcher):
                                        state=UserState.practice_menu_mr)
     dp.register_callback_query_handler(take_part_confirmation,
                                        state=UserState.practice_take_part_mr_confirm)
+    dp.register_message_handler(take_part_take_photo,
+                                content_types=['photo'],
+                                state=UserState.practice_take_part_mr_send)
 
     dp.register_message_handler(add_new_practice_add_name,
                                 text='Добавить новую➕',
@@ -244,6 +279,7 @@ def register_handlers_best_practice(dp: Dispatcher):
     dp.register_message_handler(add_new_practice,
                                 content_types=['photo'],
                                 state=UserState.practice_add_picture)
+
     dp.register_message_handler(manage_practice,
                                 text='Управлять текущими🔀',
                                 state=UserState.practice_menu_citimanager)

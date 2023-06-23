@@ -1,22 +1,28 @@
+import logging
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
+from typing import Union
 
 from loader import db
 from utils import keyboards, queries
 from utils.states import UserState
 
 
-async def get_auth_level_state(user_tg_id: int) -> UserState:
+async def get_auth_level_state(user_tg_id: int) -> Union[UserState,
+                                                         ValueError]:
     auth_level = await db.get_one(await queries.get_value(value='position',
                                                           table='users'),
                                   tg_id=user_tg_id)
-    match auth_level[0]:
-        case 'mr':
-            return await UserState.auth_mr.set()
-        case 'kas':
-            return await UserState.auth_kas.set()
-        case 'citimanager':
-            return await UserState.auth_citimanager.set()
+    if auth_level:
+        match auth_level[0]:
+            case 'mr':
+                return await UserState.auth_mr.set()
+            case 'kas':
+                return await UserState.auth_kas.set()
+            case 'citimanager':
+                return await UserState.auth_citimanager.set()
+    else:
+        raise ValueError
 
 
 async def start_no_auth(message: types.Message):
@@ -76,7 +82,7 @@ async def start_menu_from_button(message: types.Message, state: FSMContext):
         await get_auth_level_state(int(message.from_user.id))
         await message.answer(text='Выберите пункт из меню:',
                              reply_markup=keyboards.start_menu_merch)
-    except TypeError as error:
+    except ValueError as error:
         await message.answer(text='Кажется вы не авторизованы в боте!\n'
                                   'Нажмите /start для авторизации!')
         await state.finish()

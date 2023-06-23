@@ -26,6 +26,7 @@ class UserState(StatesGroup):
 
     practice_take_part_mr = State()
     practice_take_part_mr_confirm = State()
+    practice_take_part_mr_send = State()
 
     practice_add = State()
     practice_add_desc = State()

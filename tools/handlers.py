@@ -69,12 +69,8 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
 
 # формируем запрос к бд, получаем ответ
 async def name_choice(callback: types.CallbackQuery, state: FSMContext):
-    await callback.bot.answer_callback_query(callback.id)
     await callback.message.delete()
     try:
-        time.sleep(0.5)
-        await callback.answer(text='Ожидайте отправки файла...',
-                              show_alert=False)
         name = callback.data
         data = await state.get_data()
         data = await db.get_one(queries.file_query, name=name,
@@ -82,9 +78,9 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
                                 cluster=data['cluster'])
         file = AsyncPath(str(data[0]))
         if await file.is_file():
-            time.sleep(0.5)
-            await callback.answer(text='Отправляю файл...',
+            await callback.answer(text='Ожидайте отправки файла...',
                                   show_alert=False)
+            time.sleep(0.5)
             async with aiofiles.open(str(data[0]), 'rb') as file:
                 await callback.message.answer_document(file,
                                                        reply_markup=keyboards.back)

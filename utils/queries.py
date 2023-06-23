@@ -8,6 +8,9 @@ BP_NAME = "SELECT name, desc, datetime_start, datetime_stop, pics FROM "\
           "best_practice"
 MAX_ID = "SELECT MAX(id) FROM best_practice"
 
+INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (best_practice, username, " \
+                  "datetime_added, pics) VALUES (?, ?, ?, ?)"
+
 INSERT_PRACTICE = "INSERT INTO best_practice (name, desc, user_added, "\
                   "datetime_added, datetime_start, datetime_stop, is_active, "\
                   "pics) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
