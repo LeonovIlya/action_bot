@@ -1,14 +1,11 @@
-# запросы к таблице planograms
-shop_list = "SELECT DISTINCT chain_name FROM planograms"
-magnit_list = "SELECT DISTINCT shop_name FROM planograms"
-name_query = "SELECT DISTINCT name FROM planograms"
-file_query = "SELECT file_link FROM planograms"
+NAME_QUERY = "SELECT DISTINCT name FROM planograms"
 
 BP_NAME = "SELECT name, desc, datetime_start, datetime_stop, pics FROM "\
           "best_practice"
+
 MAX_ID = "SELECT MAX(id) FROM best_practice"
 
-INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (best_practice, username, " \
+INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (best_practice, username, "\
                   "datetime_added, pics) VALUES (?, ?, ?, ?)"
 
 INSERT_PRACTICE = "INSERT INTO best_practice (name, desc, user_added, "\
@@ -16,10 +13,15 @@ INSERT_PRACTICE = "INSERT INTO best_practice (name, desc, user_added, "\
                   "pics) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
 
 UPDATE_TG_ID = "UPDATE users SET tg_id = ? WHERE ter_num = ?"
+LOGOUT = "UPDATE users SET tg_id = NULL WHERE tg_id = ?"
 
-kpi_mr_query = "SELECT plan_pss, fact_pss, [%_pss], plan_osa, fact_osa, "\
+KP_MR_QUERY = "SELECT plan_pss, fact_pss, [%_pss], plan_osa, fact_osa, "\
                "[%_osa], plan_tt, fact_tt, [%_tt], plan_visits, fact_visits,"\
-               "[%_visits], isa_osa FROM users"
+               "[%_visits] FROM users"
+
+KPI_TT_QUERY = "SELECT address, mr, kas, plan_pss, fact_pss, [%_pss], "\
+               "plan_osa, fact_osa, [%_osa], plan_tt, fact_tt, [%_tt], "\
+               "FROM tt"
 
 
 async def get_value(value: str, table: str) -> str:

@@ -9,17 +9,19 @@ class UserState(StatesGroup):
     auth_kas = State()
     auth_citimanager = State()
 
-    tools_menu_mr = State()
+    tools_menu = State()
 
-    dmp = State()
-    dmp_address_search = State()
-    dmp_tt_search = State()
+    tools_dmp = State()
+    tools_dmp_tt_search = State()
 
-    plan_cluster = State()
-    plan_shop = State()
-    plan_name = State()
+    tools_plan_cluster = State()
+    tools_plan_shop = State()
+    tools_plan_name = State()
 
-    kpi_menu_mr = State()
+    tools_promo = State()
+
+    kpi_menu = State()
+    kpi_search_tt = State()
 
     practice_menu_mr = State()
     practice_menu_citimanager = State()

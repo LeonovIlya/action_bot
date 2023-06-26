@@ -12,7 +12,7 @@ start_menu_merch = ReplyKeyboardMarkup(keyboard=[
 
 tools_menu_merch = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Планограммы🧮'), KeyboardButton(text='ДМП📦')],
-    [KeyboardButton(text='Картина Успеха🎉')],
+    [KeyboardButton(text='Промо🎁'), KeyboardButton(text='Картина Успеха🎉')],
     [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True)
