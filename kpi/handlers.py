@@ -53,7 +53,7 @@ async def kpi_mr(message: types.Message):
 
 
 async def kpi_tt(message: types.Message):
-    await message.answer(text='Введите 6-ти значный номер ТТ:',
+    await message.answer(text='Введите 7-ти значный номер ТТ:',
                          reply_markup=keyboards.back)
     await UserState.kpi_search_tt.set()
 
@@ -68,7 +68,6 @@ async def kpi_search_tt(message: types.Message):
                 address = re.sub(
                     r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,)|(\s№\s)|(\sг,)',
                     '', query[0])
-                print(query)
                 await message.answer(
                     text=f'<b>TT № {tt_num}:</b>\n'
                          f'<b>Адрес:</b> {address}\n'

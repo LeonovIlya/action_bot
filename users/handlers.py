@@ -101,6 +101,7 @@ async def password_check(message: types.Message, state: FSMContext):
                                       f'Выберите пункт из меню:',
                                  reply_markup=keyboards.start_menu_merch)
             await get_auth_level_state(int(message.from_user.id))
+            await state.reset_data()
     except Exception as error:
         await message.answer(text='Кажется что-то пошло не так!\n'
                                   'Попробуйте еще раз!')
@@ -111,6 +112,7 @@ async def password_check(message: types.Message, state: FSMContext):
 async def start_menu_from_button(message: types.Message, state: FSMContext):
     try:
         await get_auth_level_state(int(message.from_user.id))
+        await state.reset_data()
         await message.answer(text='Выберите пункт из меню:',
                              reply_markup=keyboards.start_menu_merch)
     except ValueError as error:
@@ -125,6 +127,7 @@ async def logout(message: types.Message, state: FSMContext):
         await db.post(queries.LOGOUT,
                       tg_id=message.from_user.id)
         await message.answer(text='Вы успешно разлогинились!')
+        await state.reset_data()
         await state.finish()
     except Exception as error:
         await message.answer(text='Кажется что-то пошло не так!\n'

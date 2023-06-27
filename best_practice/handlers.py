@@ -4,6 +4,7 @@ import locale
 import logging
 from aiopath import AsyncPath
 from aiofiles import os as aios
+from itertools import cycle
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
@@ -16,13 +17,15 @@ from utils.states import UserState
 locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
 
 
-async def practice_menu_mr(message: types.Message):
+async def practice_menu_mr(message: types.Message, state: FSMContext):
+    await state.reset_data()
     await message.answer(text='Выберите пункт из меню:',
                          reply_markup=keyboards.practice_menu_merch)
     await UserState.practice_menu_mr.set()
 
 
-async def practice_menu_citimanager(message: types.Message):
+async def practice_menu_citimanager(message: types.Message, state: FSMContext):
+    await state.reset_data()
     await message.answer(text='Выберите пункт из меню:',
                          reply_markup=keyboards.practice_menu_citimanager)
     await UserState.practice_menu_citimanager.set()
@@ -53,13 +56,13 @@ async def get_current_practice(message: types.Message):
                         await message.answer_photo(photo=file,
                                                    caption=f'<b>'
                                                            f'{str(i[0])}</b'
-                                                           f'>\n\n '
+                                                           f'>\n\n'
                                                            f'{str(i[1])}\n\n'
                                                            f'<b>Дата '
-                                                           f'начала:</b>\n '
+                                                           f'начала:</b>\n'
                                                            f'{str(start)}\n\n'
                                                            f'<b>Дата '
-                                                           f'окончания:</b>\n '
+                                                           f'окончания:</b>\n'
                                                            f'{str(stop)}',
                                                    reply_markup=inline_keyboard)
                 else:
@@ -82,7 +85,6 @@ async def get_current_practice(message: types.Message):
 
 
 async def take_part(callback: types.CallbackQuery, state: FSMContext):
-    bp_name = callback.data
     try:
         username = await db.get_one(
             await queries.get_value(
@@ -95,7 +97,7 @@ async def take_part(callback: types.CallbackQuery, state: FSMContext):
                     value='*',
                     table='best_practice_mr'),
                 username=str(username[0]),
-                best_practice=str(bp_name)))
+                best_practice=str(callback.data)))
         if check_part:
             await callback.answer(text='Вы уже участвуете!',
                                   show_alert=False)
@@ -107,10 +109,11 @@ async def take_part(callback: types.CallbackQuery, state: FSMContext):
             confirm_keyboard.insert(
                 InlineKeyboardButton('Нет',
                                      callback_data='bp_no'))
-            await state.update_data(bp_name=str(bp_name))
+            await state.update_data(bp_name=str(callback.data))
+            await state.update_data(username=str(username[0]))
             await callback.message.answer(text=f'Вы уверены, что хотите '
                                                f'участвовать в практике:\n'
-                                               f'<b>{bp_name}?</b>',
+                                               f'<b>{callback.data}?</b>',
                                           reply_markup=confirm_keyboard)
             await UserState.practice_take_part_mr_confirm.set()
     except Exception as error:
@@ -123,35 +126,48 @@ async def take_part_confirmation(callback: types.CallbackQuery):
     await callback.bot.answer_callback_query(callback.id)
     if callback.data == 'bp_yes':
         await callback.message.answer(text='Отправьте фотографию:')
-        await UserState.practice_take_part_mr_send.set()
+        await UserState.practice_take_part_mr_photo.set()
     if callback.data == 'bp_no':
         await callback.message.delete()
         await UserState.practice_menu_mr.set()
 
 
 async def take_part_take_photo(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    bp_name = data['bp_name']
-    tg_id = message.from_user.id
     try:
+        data = await state.get_data()
         bp_id = await db.get_one(
             await queries.get_value(
                 value='id',
                 table='best_practice'),
-            name=bp_name)
-        destination = f'./files/best_practice/{int(bp_id[0])}/{int(tg_id)}.jpg'
+            name=str(data['bp_name']))
+        destination = f'./files/best_practice/{int(bp_id[0])}/{int(message.from_user.id)}.jpg '
+        await state.update_data(destination=destination)
         await message.photo[-1].download(destination_file=destination,
                                          make_dirs=True)
-        username = await db.get_one(
-            await queries.get_value(
-                value='username',
-                table='users'),
-            tg_id=int(message.from_user.id))
+        await message.answer(text='Добавьте описание к фото',
+                             reply_markup=keyboards.back)
+        await UserState.practice_take_part_mr_desc.set()
+    except Exception as error:
+        await message.answer(text='Кажется что-то пошло не так!\n'
+                                  'Попробуйте еще раз!')
+        logging.info(f'DB error: {error}, user: {int(message.from_user.id)}')
+
+
+async def take_part_take_description(message: types.Message,
+                                     state: FSMContext):
+    try:
+        data = await state.get_data()
         await db.post(queries.INSERT_PRACTICE_MR,
-                      best_practice=str(bp_name),
-                      username=str(username[0]),
+                      best_practice=str(data['bp_name']),
+                      username=str(data['username']),
+                      tg_id=int(message.from_user.id),
                       datetime_added=datetime.datetime.now(),
-                      pics=str(destination))
+                      desc=str(message.text),
+                      file_link=str(data['destination']),
+                      checked=False,
+                      kas_approved=False,
+                      cm_approved=False,
+                      active=False)
         await message.answer(text='Ваше заявка принята, ожидайте решения!',
                              reply_markup=keyboards.back)
     except Exception as error:
@@ -247,7 +263,7 @@ async def add_new_practice(message: types.Message, state: FSMContext):
                       datetime_start=data['date_start'],
                       datetime_stop=data['date_stop'],
                       is_active=True,
-                      pics=destination)
+                      file_link=destination)
         await message.answer(text='Успешно добавлено',
                              reply_markup=keyboards.back)
     except Exception as error:
@@ -256,18 +272,98 @@ async def add_new_practice(message: types.Message, state: FSMContext):
         logging.info(f'DB error: {error}, user: {int(message.from_user.id)}')
 
 
-async def manage_practice(message: types.Message):
-    await message.answer(text='Данная функция в разработке',
-                         reply_markup=keyboards.back)
+async def manage_practice_cm(message: types.Message):
+    try:
+        data = await db.get_all(queries.BP_NAME,
+                                is_active=True)
+        if data:
+            await message.answer(text='Практики, доступные на данный момент:',
+                                 reply_markup=keyboards.back)
+            for i in data:
+                inline_keyboard = InlineKeyboardMarkup()
+                inline_keyboard.insert(
+                    InlineKeyboardButton('Управлять',
+                                         callback_data=f'{i[0]}'))
+                await message.answer(text=f'<b>{i[0]}</b>',
+                                     reply_markup=inline_keyboard)
+                await UserState.practice_show_citimanager.set()
+        else:
+            await message.answer(
+                text='Доступных практик на данный момент нет!',
+                reply_markup=keyboards.back)
+    except Exception as error:
+        await message.answer(text='Кажется что-то пошло не так!\n'
+                                  'Попробуйте еще раз!')
+        logging.info(f'DB error: {error}, user: {int(message.from_user.id)}')
+
+
+async def manage_practice_show_cm(callback: types.CallbackQuery,
+                                  state: FSMContext):
+    data = await state.get_data()
+    print(data)
+    if callback.data == 'Accept':
+        await callback.bot.answer_callback_query(callback.id)
+        await db.post(queries.BP_CM,
+                      cm_approved=True,
+                      id=data['bp_id'])
+    elif callback.data == 'Decline':
+        await callback.bot.answer_callback_query(callback.id)
+        await db.post(queries.BP_CM,
+                      cm_approved=False,
+                      id=data['bp_id'])
+        await callback.bot.send_message(chat_id=data['mr_tg_id'],
+                                        text='Ваша заявка на участие в '
+                                             'Лучшей Практике отклонена!')
+    else:
+        photo = await db.get_one(queries.BP_PHOTOS,
+                                 best_practice=str(callback.data),
+                                 checked=False,
+                                 kas_approved=False,
+                                 cm_approved=False,
+                                 active=False)
+        if photo:
+            await callback.bot.answer_callback_query(callback.id)
+            await state.update_data(bp_id=photo[0])
+            await state.update_data(mr_tg_id=photo[1])
+
+            keyboard = InlineKeyboardMarkup()
+            keyboard.insert(
+                InlineKeyboardButton('Принять',
+                                     callback_data='Accept'))
+            keyboard.insert(
+                InlineKeyboardButton('Отклонить',
+                                     callback_data='Decline'))
+            keyboard.insert(
+                InlineKeyboardButton('Дальше',
+                                     callback_data=str(callback.data)))
+            file = AsyncPath(str(photo[3]))
+            if await file.is_file():
+                async with aiofiles.open(str(photo[3]), 'rb') as file:
+                    await callback.message.answer_photo(photo=file,
+                                                        caption=f'{photo[2]}',
+                                                        reply_markup=keyboard)
+        else:
+            await callback.answer(text='Нет фото для модерации!',
+                                  show_alert=True)
+            await callback.message.delete()
 
 
 def register_handlers_best_practice(dp: Dispatcher):
     dp.register_message_handler(practice_menu_mr,
                                 text='Назад↩',
                                 state=(UserState.practice_menu_mr,
-                                       UserState.practice_menu_kas,
-                                       UserState.practice_menu_citimanager,
-                                       UserState.practice_take_part_mr_send,
+                                       UserState.practice_take_part_mr_confirm,
+                                       UserState.practice_take_part_mr_photo,
+                                       UserState.practice_take_part_mr_desc))
+
+    dp.register_message_handler(practice_menu_citimanager,
+                                text='Назад↩',
+                                state=(UserState.practice_menu_citimanager,
+                                       UserState.practice_show_citimanager,
+                                       UserState.practice_add,
+                                       UserState.practice_add_desc,
+                                       UserState.practice_add_start,
+                                       UserState.practice_add_stop,
                                        UserState.practice_add_picture))
 
     dp.register_message_handler(practice_menu_mr,
@@ -289,7 +385,9 @@ def register_handlers_best_practice(dp: Dispatcher):
                                        state=UserState.practice_take_part_mr_confirm)
     dp.register_message_handler(take_part_take_photo,
                                 content_types=['photo'],
-                                state=UserState.practice_take_part_mr_send)
+                                state=UserState.practice_take_part_mr_photo)
+    dp.register_message_handler(take_part_take_description,
+                                state=UserState.practice_take_part_mr_desc)
 
     dp.register_message_handler(add_new_practice_add_name,
                                 text='Добавить новую➕',
@@ -306,6 +404,8 @@ def register_handlers_best_practice(dp: Dispatcher):
                                 content_types=['photo'],
                                 state=UserState.practice_add_picture)
 
-    dp.register_message_handler(manage_practice,
+    dp.register_message_handler(manage_practice_cm,
                                 text='Управлять текущими🔀',
                                 state=UserState.practice_menu_citimanager)
+    dp.register_callback_query_handler(manage_practice_show_cm,
+                                       state=UserState.practice_show_citimanager)

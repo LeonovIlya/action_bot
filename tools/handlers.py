@@ -1,21 +1,25 @@
 import aiofiles
 import logging
+import re
 import time
+from aiofiles import os as aios
 from aiopath import AsyncPath
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from loader import db
 from utils import keyboards, queries
 from utils.states import UserState
 
-CLUSTERS = ('0', '2', '3')
+CLUSTERS = ('0', '2',)
 SHOPS = ('Верный', 'Дикси', 'Лента', 'Магнит', 'Перекресток', 'Пятерочка')
 MAGNITS = ('Магнит ГМ', 'Магнит МК', 'Магнит ММ')
 
 
-async def tools_menu(message: types.Message):
+async def tools_menu(message: types.Message, state: FSMContext):
+    await state.reset_data()
     await message.answer(text='Выберите пункт из меню:',
                          reply_markup=keyboards.tools_menu_merch)
     await UserState.tools_menu.set()
@@ -106,9 +110,48 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
         logging.info('%error', error)
 
 
-async def get_dmp(message: types.Message):
-    await message.answer(text='Данная функция в разработке',
+async def dmp_get(message: types.Message):
+    await message.answer(text='Введите 7-ти значный номер ТТ:',
                          reply_markup=keyboards.back)
+    await UserState.tools_dmp_search.set()
+
+
+async def dmp_search(message: types.Message):
+    tt_num = re.sub(r'\s', '', str(message.text))
+    if re.match(r'\d{7}', tt_num) and len(tt_num) == 7:
+        try:
+            query = await db.get_one(queries.DMP_TT_QUERY,
+                                     tt_num=int(tt_num))
+            print(query)
+            if query:
+                if query[0]:
+                    await message.answer(
+                        text=f'<b>TT № {tt_num}:</b>\n\n'
+                             f'<u>Оборудование:</u>\n'
+                             f'{query[0]}\n'
+                             f'<u>Выполнение:</u>\n'
+                             f'{query[1]:.2%}\n'
+                             f'<u>Комментарии:</u>\n'
+                             f'{query[2]}',
+                        reply_markup=keyboards.back)
+                else:
+                    await message.answer(text='Информация о ДМП в этой ТТ не '
+                                              'найдена!',
+                                         reply_markup=keyboards.back)
+            else:
+                await message.answer(text='ТТ с таким номер не найдена!\n'
+                                          'Попробуйте еще раз!',
+                                     reply_markup=keyboards.back)
+        except Exception as error:
+            await message.answer(text='Кажется что-то пошло не так!\n'
+                                      'Попробуйте еще раз!')
+            logging.info(
+                f'DB error: {error}, user: {int(message.from_user.id)}')
+
+    else:
+        await message.answer(text='Номер ТТ не соответствует формату!\n'
+                                  'Введите еще раз!',
+                             reply_markup=keyboards.back)
 
 
 async def promo_action(message: types.Message):
@@ -119,7 +162,6 @@ async def promo_action(message: types.Message):
 
 
 async def get_promo_action(callback: types.CallbackQuery):
-    await callback.bot.answer_callback_query(callback.id)
     if callback.data == 'Магнит':
         keyboard = await keyboards.get_inline_buttons(MAGNITS)
         await callback.bot.edit_message_text(
@@ -129,7 +171,6 @@ async def get_promo_action(callback: types.CallbackQuery):
             reply_markup=keyboard)
     else:
         try:
-            await callback.message.delete()
             file_link = await db.get_one(
                 await queries.get_value(
                     value='file_link',
@@ -140,25 +181,60 @@ async def get_promo_action(callback: types.CallbackQuery):
                 await callback.answer(text='Отправляю файл...',
                                       show_alert=False)
                 time.sleep(1)
+                await callback.message.delete()
                 async with aiofiles.open(str(file_link[0]), 'rb') as file:
                     await callback.message.answer_document(file,
                                                            reply_markup=keyboards.back)
-                    await UserState.tools_menu.set()
             else:
                 await callback.message.answer(text='Файл не найден!',
                                               reply_markup=keyboards.back)
-                await UserState.tools_menu.set()
         except Exception as error:
             await callback.message.answer(
                 text=f'Какая-то ошибка!\nПопробуйте сначала!\nError: {error}',
                 reply_markup=keyboards.back)
-            await UserState.tools_menu.set()
             logging.info('%error', error)
 
 
 async def get_picture_success(message: types.Message):
-    await message.answer(text='Данная функция в разработке',
-                         reply_markup=keyboards.back)
+    ku_list = await aios.listdir('./files/k_u/')
+    if ku_list:
+        await message.answer(text='Текущие Картины Успеха:',
+                             reply_markup=keyboards.back)
+        for i in ku_list:
+            keyboard = InlineKeyboardMarkup()
+            keyboard.insert(
+                InlineKeyboardButton('Скачать',
+                                     callback_data=str(i)))
+            await message.answer(text=f'{i}',
+                                 reply_markup=keyboard)
+        await UserState.tools_get_ku.set()
+    else:
+        await message.answer(text='На данный момент нет доступных Картин '
+                                  'Успеха!',
+                             reply_markup=keyboards.back)
+
+
+async def send_picture_success(callback: types.CallbackQuery):
+    try:
+        file = AsyncPath(f'./files/k_u/{str(callback.data)}')
+        if await file.is_file():
+            await callback.answer(text='Отправляю файл...',
+                                  show_alert=False)
+            time.sleep(1)
+            await callback.message.delete()
+            async with aiofiles.open(f'./files/k_u/{str(callback.data)}',
+                                     'rb')as file:
+                await callback.message.answer_document(file,
+                                                       reply_markup=keyboards.back)
+        else:
+            await callback.message.answer(text='Файл не найден!',
+                                          reply_markup=keyboards.back)
+    except Exception as error:
+        await callback.message.answer(
+            text=f'Какая-то ошибка!\nПопробуйте сначала!\nError: {error}',
+            reply_markup=keyboards.back)
+        await UserState.tools_menu.set()
+        logging.info('%error', error)
 
 
 # компануем в обработчик
@@ -169,7 +245,9 @@ def register_handlers_tools(dp: Dispatcher):
                                        UserState.tools_promo,
                                        UserState.tools_plan_cluster,
                                        UserState.tools_plan_shop,
-                                       UserState.tools_plan_name))
+                                       UserState.tools_plan_name,
+                                       UserState.tools_get_ku,
+                                       UserState.tools_dmp_search))
     dp.register_message_handler(tools_menu,
                                 text='Инструменты🛠',
                                 state=[UserState.auth_mr,
@@ -178,15 +256,19 @@ def register_handlers_tools(dp: Dispatcher):
     dp.register_message_handler(planogram_choice,
                                 text='Планограммы🧮',
                                 state=UserState.tools_menu)
-    dp.register_message_handler(get_dmp,
+    dp.register_message_handler(dmp_get,
                                 text='ДМП📦',
                                 state=UserState.tools_menu)
+    dp.register_message_handler(dmp_search,
+                                state=UserState.tools_dmp_search)
     dp.register_message_handler(promo_action,
                                 text='Промо🎁',
                                 state=UserState.tools_menu)
     dp.register_message_handler(get_picture_success,
                                 text='Картина Успеха🎉',
                                 state=UserState.tools_menu)
+    dp.register_callback_query_handler(send_picture_success,
+                                       state=UserState.tools_get_ku)
     dp.register_callback_query_handler(cluster_choice,
                                        state=UserState.tools_plan_cluster)
     dp.register_callback_query_handler(shop_choice,
