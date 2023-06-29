@@ -89,12 +89,15 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
             name=name,
             shop_name=data['shop_name'],
             cluster=data['cluster'])
+        print(file_link[0])
         file = AsyncPath(str(file_link[0]))
         if await file.is_file():
             await callback.answer(text='Отправляю файл...',
                                   show_alert=False)
             time.sleep(1)
             async with aiofiles.open(str(file_link[0]), 'rb') as file:
+                await callback.message.answer_chat_action(
+                    action='upload_document')
                 await callback.message.answer_document(file,
                                                        reply_markup=keyboards.back)
                 await UserState.tools_menu.set()
@@ -182,6 +185,8 @@ async def get_promo_action(callback: types.CallbackQuery):
                                       show_alert=False)
                 time.sleep(1)
                 await callback.message.delete()
+                await callback.message.answer_chat_action(
+                    action='upload_document')
                 async with aiofiles.open(str(file_link[0]), 'rb') as file:
                     await callback.message.answer_document(file,
                                                            reply_markup=keyboards.back)
@@ -195,26 +200,40 @@ async def get_promo_action(callback: types.CallbackQuery):
             logging.info('%error', error)
 
 
-async def get_picture_success(message: types.Message):
-    ku_list = await aios.listdir('./files/k_u/')
+async def picture_success_select(message: types.Message):
+    keyboard = InlineKeyboardMarkup()
+    keyboard.insert(
+        InlineKeyboardButton('Общая КУ',
+                             callback_data='Grocery'))
+    keyboard.insert(
+        InlineKeyboardButton('КУ косметик',
+                             callback_data='Drogerie'))
+    await message.answer(text='Выберите Картину Успеха:',
+                         reply_markup=keyboard)
+    await UserState.tools_select_ku.set()
+
+
+async def picture_success_get(callback: types.CallbackQuery):
+    ku_list = await aios.listdir(f'./files/k_u/{str(callback.data)}/')
     if ku_list:
-        await message.answer(text='Текущие Картины Успеха:',
-                             reply_markup=keyboards.back)
         for i in ku_list:
+            await callback.message.delete()
             keyboard = InlineKeyboardMarkup()
             keyboard.insert(
                 InlineKeyboardButton('Скачать',
-                                     callback_data=str(i)))
-            await message.answer(text=f'{i}',
-                                 reply_markup=keyboard)
+                                     callback_data=f'{str(callback.data)}/'
+                                                   f'{str(i)}'))
+            await callback.message.answer(text=f'{i}',
+                                          reply_markup=keyboard)
         await UserState.tools_get_ku.set()
     else:
-        await message.answer(text='На данный момент нет доступных Картин '
-                                  'Успеха!',
-                             reply_markup=keyboards.back)
+        await callback.message.answer(text='На данный момент нет доступных '
+                                           'Картин Успеха!',
+                                      reply_markup=keyboards.back)
 
 
-async def send_picture_success(callback: types.CallbackQuery):
+async def picture_success_send(callback: types.CallbackQuery):
+    print(callback.data)
     try:
         file = AsyncPath(f'./files/k_u/{str(callback.data)}')
         if await file.is_file():
@@ -222,8 +241,9 @@ async def send_picture_success(callback: types.CallbackQuery):
                                   show_alert=False)
             time.sleep(1)
             await callback.message.delete()
+            await callback.message.answer_chat_action(action='upload_document')
             async with aiofiles.open(f'./files/k_u/{str(callback.data)}',
-                                     'rb')as file:
+                                     'rb') as file:
                 await callback.message.answer_document(file,
                                                        reply_markup=keyboards.back)
         else:
@@ -246,6 +266,7 @@ def register_handlers_tools(dp: Dispatcher):
                                        UserState.tools_plan_cluster,
                                        UserState.tools_plan_shop,
                                        UserState.tools_plan_name,
+                                       UserState.tools_select_ku,
                                        UserState.tools_get_ku,
                                        UserState.tools_dmp_search))
     dp.register_message_handler(tools_menu,
@@ -264,11 +285,15 @@ def register_handlers_tools(dp: Dispatcher):
     dp.register_message_handler(promo_action,
                                 text='Промо🎁',
                                 state=UserState.tools_menu)
-    dp.register_message_handler(get_picture_success,
+
+    dp.register_message_handler(picture_success_select,
                                 text='Картина Успеха🎉',
                                 state=UserState.tools_menu)
-    dp.register_callback_query_handler(send_picture_success,
+    dp.register_callback_query_handler(picture_success_get,
+                                       state=UserState.tools_select_ku)
+    dp.register_callback_query_handler(picture_success_send,
                                        state=UserState.tools_get_ku)
+
     dp.register_callback_query_handler(cluster_choice,
                                        state=UserState.tools_plan_cluster)
     dp.register_callback_query_handler(shop_choice,

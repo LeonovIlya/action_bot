@@ -20,6 +20,7 @@ class UserState(StatesGroup):
 
     tools_promo = State()
 
+    tools_select_ku = State()
     tools_get_ku = State()
 
     tools_dmp_search = State()

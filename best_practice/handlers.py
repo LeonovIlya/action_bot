@@ -182,7 +182,8 @@ async def make_suggest(message: types.Message):
 
 
 async def add_new_practice_add_name(message: types.Message):
-    await message.answer(text='Напишите название новой практики:',
+    await message.answer(text='Напишите название новой практики:\n'
+                              '(Не более 40 символов!)',
                          reply_markup=keyboards.back)
     await UserState.practice_add.set()
 
