@@ -7,7 +7,7 @@ class UserState(StatesGroup):
 
     auth_mr = State()
     auth_kas = State()
-    auth_citimanager = State()
+    auth_cm = State()
 
     tools_menu = State()
 
@@ -30,7 +30,7 @@ class UserState(StatesGroup):
 
     practice_menu_mr = State()
     practice_menu_kas = State()
-    practice_menu_citimanager = State()
+    practice_menu_cm = State()
 
     practice_take_part_mr = State()
     practice_take_part_mr_confirm = State()
@@ -43,9 +43,9 @@ class UserState(StatesGroup):
     practice_add_stop = State()
     practice_add_picture = State()
 
-    practice_show_photo_kas = State()
-
-    practice_show_citimanager = State()
-    practice_manage_citimanager = State()
+    practice_requests_show_kas = State()
+    practice_requests_show_cm = State()
 
     ratings_menu_mr = State()
+
+    profile_menu = State()

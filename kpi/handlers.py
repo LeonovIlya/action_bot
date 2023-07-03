@@ -7,26 +7,28 @@ from loader import db
 from utils import keyboards, queries
 from utils.states import UserState
 
+r_str = r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,' \
+        r')|(\s№\s)|(\sг,)'
+
 
 async def kpi_menu(message: types.Message):
     await message.answer(text='Выберите пункт из меню:',
-                         reply_markup=keyboards.kpi_menu_merch)
+                         reply_markup=keyboards.kpi_menu)
     await UserState.kpi_menu.set()
 
 
 async def kpi_mr(message: types.Message):
-    user_tg_id = message.from_user.id
     try:
         position = await db.get_one(
             await queries.get_value(
                 value='position',
                 table='users'
             ),
-            tg_id=int(user_tg_id)
+            tg_id=int(message.from_user.id)
         )
         if position[0] == 'mr':
             query = await db.get_one(queries.KP_MR_QUERY,
-                                     tg_id=int(user_tg_id))
+                                     tg_id=int(message.from_user.id))
             await message.answer(text=f'<b>Ваш KPI (план | факт | '
                                       f'выполнение):</b>\n'
                                       f'<b><u>PSS:</u></b> {query[0]:.2%} |'
@@ -47,13 +49,13 @@ async def kpi_mr(message: types.Message):
                                       '<u>мерчендайзеров</u>.',
                                  reply_markup=keyboards.back)
     except Exception as error:
-        await message.answer(text='Кажется что-то пошло не так!\n'
+        await message.answer(text='❗ Кажется что-то пошло не так!\n'
                                   'Попробуйте еще раз!')
-        logging.info(f'DB error: {error}, user: {int(message.from_user.id)}')
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 async def kpi_tt(message: types.Message):
-    await message.answer(text='Введите 7-ти значный номер ТТ:',
+    await message.answer(text='Введите 7-и значный номер ТТ:',
                          reply_markup=keyboards.back)
     await UserState.kpi_search_tt.set()
 
@@ -63,11 +65,9 @@ async def kpi_search_tt(message: types.Message):
     if re.match(r'\d{7}', tt_num) and len(tt_num) == 7:
         try:
             query = await db.get_one(queries.KPI_TT_QUERY,
-                                     tt_num=int(tt_num))
+                                     tt_num=tt_num)
             if query:
-                address = re.sub(
-                    r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,)|(\s№\s)|(\sг,)',
-                    '', query[0])
+                address = re.sub(r_str, '', query[0])
                 await message.answer(
                     text=f'<b>TT № {tt_num}:</b>\n'
                          f'<b>Адрес:</b> {address}\n'
@@ -84,17 +84,17 @@ async def kpi_search_tt(message: types.Message):
                          f' {query[11]:.2%}',
                     reply_markup=keyboards.back)
             else:
-                await message.answer(text='ТТ с таким номер не найдена!\n'
+                await message.answer(text='❗ ТТ с таким номером не найдена!\n'
                                           'Попробуйте еще раз!',
                                      reply_markup=keyboards.back)
         except Exception as error:
-            await message.answer(text='Кажется что-то пошло не так!\n'
+            await message.answer(text='❗ Кажется что-то пошло не так!\n'
                                       'Попробуйте еще раз!')
             logging.info(
-                f'DB error: {error}, user: {int(message.from_user.id)}')
+                f'Error: {error}, user: {int(message.from_user.id)}')
 
     else:
-        await message.answer(text='Номер ТТ не соответствует формату!\n'
+        await message.answer(text='❗ Номер ТТ не соответствует формату ввода!\n'
                                   'Введите еще раз!',
                              reply_markup=keyboards.back)
 
@@ -104,12 +104,11 @@ def register_handlers_kpi(dp: Dispatcher):
                                 text='Назад↩',
                                 state=(UserState.kpi_menu,
                                        UserState.kpi_search_tt))
-
     dp.register_message_handler(kpi_menu,
                                 text='KPI📈',
-                                state=[UserState.auth_mr,
+                                state=(UserState.auth_mr,
                                        UserState.auth_kas,
-                                       UserState.auth_citimanager])
+                                       UserState.auth_cm))
     dp.register_message_handler(kpi_mr,
                                 text='Мой KPI📈',
                                 state=UserState.kpi_menu)

@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
@@ -8,31 +9,41 @@ from utils import keyboards, queries
 from utils.states import UserState
 
 
-async def get_auth_level_state(user_tg_id: int) -> Union[UserState,
-                                                         ValueError]:
+async def start_menu_and_state(message: types.Message, state: FSMContext):
     try:
-        auth_level = await db.get_one(
+        position = await db.get_one(
             await queries.get_value(
                 value='position',
                 table='users'),
-            tg_id=user_tg_id)
-        if auth_level:
-            match auth_level[0]:
+            tg_id=int(message.from_user.id))
+        await state.reset_state()
+        await state.reset_data()
+        if position:
+            match position[0]:
                 case 'mr':
-                    return await UserState.auth_mr.set()
+                    await message.answer(text='Выберите пункт из меню:',
+                                         reply_markup=keyboards.start_menu_mr)
+                    await UserState.auth_mr.set()
                 case 'kas':
-                    return await UserState.auth_kas.set()
-                case 'citimanager':
-                    return await UserState.auth_citimanager.set()
+                    await message.answer(text='Выберите пункт из меню:',
+                                         reply_markup=keyboards.start_menu_kas)
+                    await UserState.auth_kas.set()
+                case 'cm':
+                    await message.answer(text='Выберите пункт из меню:',
+                                         reply_markup=keyboards.start_menu_cm)
+                    await UserState.auth_cm.set()
         else:
-            raise ValueError
+            await message.answer(text='Вас приветствует чат-бот компании '
+                                      '"Action"\nДля начала работы с ботом '
+                                      'нажмите кнопку "START"',
+                                 reply_markup=keyboards.start)
     except Exception as error:
         await message.answer(text='Кажется что-то пошло не так!\n'
                                   'Попробуйте еще раз!')
-        logging.info(f'DB error: {error}, user: {int(message.from_user.id)}')
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
-async def start_no_auth(message: types.Message):
+async def start_no_auth(message: types.Message, state: FSMContext):
     try:
         auth = bool(await db.get_one(
             await queries.get_value(
@@ -40,17 +51,16 @@ async def start_no_auth(message: types.Message):
                 table='users'),
             tg_id=int(message.from_user.id)))
         if auth:
-            await message.answer(text='Выберите пункт из меню:',
-                                 reply_markup=keyboards.start_menu_merch)
-            await get_auth_level_state(int(message.from_user.id))
+            await start_menu_and_state(message, state)
         else:
             await message.answer(text='Вас приветствует чат-бот компании '
                                       '"Action"\nДля начала работы с ботом '
-                                      'нажмите /start')
+                                      'нажмите кнопку "START"',
+                                 reply_markup=keyboards.start)
     except Exception as error:
         await message.answer(text='Кажется что-то пошло не так!\n'
                                   'Попробуйте еще раз!')
-        logging.info(f'DB error: {error}, user: {int(message.from_user.id)}')
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 async def start_auth(message: types.Message):
@@ -75,51 +85,30 @@ async def login_check(message: types.Message, state: FSMContext):
     except Exception as error:
         await message.answer(text='Кажется что-то пошло не так!\n'
                                   'Попробуйте еще раз!')
-        logging.info(f'DB error: {error}, user: {int(message.from_user.id)}')
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 async def password_check(message: types.Message, state: FSMContext):
-    data = await state.get_data()
     try:
-        password = bool(await db.get_one(
+        data = await state.get_data()
+        pwd_hash = hashlib.sha512(str(message.text).encode(
+            'utf-8')).hexdigest()
+        check_password = bool(await db.get_one(
             await queries.get_value(
                 value='password',
                 table='users'),
             ter_num=str(data['ter_num']),
-            password=str(message.text)))
-        if password:
+            password=pwd_hash))
+        if check_password:
             await db.post(queries.UPDATE_TG_ID,
                           tg_id=int(message.from_user.id),
                           ter_num=str(data['ter_num']))
-            username = await db.get_one(
-                await queries.get_value(
-                    value='username',
-                    table='users'),
-                tg_id=int(message.from_user.id))
-            await message.answer(text=f'Добро пожаловать,\n'
-                                      f'<b>{username[0]}!</b>\n\n'
-                                      f'Выберите пункт из меню:',
-                                 reply_markup=keyboards.start_menu_merch)
-            await get_auth_level_state(int(message.from_user.id))
-            await state.reset_data()
+            await message.answer(text='Добро пожаловать!')
+            await start_menu_and_state(message, state)
     except Exception as error:
         await message.answer(text='Кажется что-то пошло не так!\n'
                                   'Попробуйте еще раз!')
-        logging.info(f'DB error: {error}, user: {int(message.from_user.id)}')
-
-
-# стартовое меню бота
-async def start_menu_from_button(message: types.Message, state: FSMContext):
-    try:
-        await get_auth_level_state(int(message.from_user.id))
-        await state.reset_data()
-        await message.answer(text='Выберите пункт из меню:',
-                             reply_markup=keyboards.start_menu_merch)
-    except ValueError as error:
-        await message.answer(text='Кажется вы не авторизованы в боте!\n'
-                                  'Нажмите /start для авторизации!')
-        await state.finish()
-        logging.info(f'Auth error: {error}, user: {int(message.from_user.id)}')
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 async def logout(message: types.Message, state: FSMContext):
@@ -132,19 +121,21 @@ async def logout(message: types.Message, state: FSMContext):
     except Exception as error:
         await message.answer(text='Кажется что-то пошло не так!\n'
                                   'Попробуйте еще раз!')
-        logging.info(f'DB error: {error}, user: {int(message.from_user.id)}')
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 # компануем в обработчик
 def register_handlers_users(dp: Dispatcher):
-    dp.register_message_handler(start_auth, commands=['start'])
+    dp.register_message_handler(start_auth,
+                                text='START▶️')
     dp.register_message_handler(start_no_auth)
     dp.register_message_handler(login_check,
                                 state=UserState.start_auth_get_login)
     dp.register_message_handler(password_check,
                                 state=UserState.start_auth_get_password)
-    dp.register_message_handler(start_menu_from_button,
+    dp.register_message_handler(start_menu_and_state,
                                 text='Главное меню📱',
                                 state='*')
-    dp.register_message_handler(logout, commands=['logout'],
+    dp.register_message_handler(logout,
+                                commands=['logout'],
                                 state='*')

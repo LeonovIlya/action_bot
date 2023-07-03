@@ -21,7 +21,7 @@ MAGNITS = ('Магнит ГМ', 'Магнит МК', 'Магнит ММ')
 async def tools_menu(message: types.Message, state: FSMContext):
     await state.reset_data()
     await message.answer(text='Выберите пункт из меню:',
-                         reply_markup=keyboards.tools_menu_merch)
+                         reply_markup=keyboards.tools_menu)
     await UserState.tools_menu.set()
 
 
@@ -70,10 +70,9 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
             await state.update_data(shop_name=callback.data)
             await UserState.tools_plan_name.set()
         except Exception as error:
-            await message.answer(text='Кажется что-то пошло не так!\n'
+            await message.answer(text='❗ Кажется что-то пошло не так!\n'
                                       'Попробуйте еще раз!')
-            logging.info(
-                f'DB error: {error}, user: {int(message.from_user.id)}')
+            logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 # формируем запрос к бд, получаем ответ
@@ -100,21 +99,18 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
                     action='upload_document')
                 await callback.message.answer_document(file,
                                                        reply_markup=keyboards.back)
-                await UserState.tools_menu.set()
         else:
             await callback.message.answer(text='Файл не найден!',
                                           reply_markup=keyboards.back)
-            await UserState.tools_menu.set()
     except Exception as error:
         await callback.message.answer(
-            text=f'Какая-то ошибка!\nПопробуйте сначала!\nError: {error}',
+            text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!',
             reply_markup=keyboards.back)
-        await UserState.tools_menu.set()
-        logging.info('%error', error)
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 async def dmp_get(message: types.Message):
-    await message.answer(text='Введите 7-ти значный номер ТТ:',
+    await message.answer(text='Введите 7-и значный номер ТТ:',
                          reply_markup=keyboards.back)
     await UserState.tools_dmp_search.set()
 
@@ -124,7 +120,7 @@ async def dmp_search(message: types.Message):
     if re.match(r'\d{7}', tt_num) and len(tt_num) == 7:
         try:
             query = await db.get_one(queries.DMP_TT_QUERY,
-                                     tt_num=int(tt_num))
+                                     tt_num=tt_num)
             print(query)
             if query:
                 if query[0]:
@@ -142,17 +138,16 @@ async def dmp_search(message: types.Message):
                                               'найдена!',
                                          reply_markup=keyboards.back)
             else:
-                await message.answer(text='ТТ с таким номер не найдена!\n'
+                await message.answer(text='❗ ТТ с таким номером не найдена!\n'
                                           'Попробуйте еще раз!',
                                      reply_markup=keyboards.back)
         except Exception as error:
-            await message.answer(text='Кажется что-то пошло не так!\n'
+            await message.answer(text='❗ Кажется что-то пошло не так!\n'
                                       'Попробуйте еще раз!')
-            logging.info(
-                f'DB error: {error}, user: {int(message.from_user.id)}')
+            logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
     else:
-        await message.answer(text='Номер ТТ не соответствует формату!\n'
+        await message.answer(text='мНомер ТТ не соответствует формату ввода!\n'
                                   'Введите еще раз!',
                              reply_markup=keyboards.back)
 
@@ -195,9 +190,9 @@ async def get_promo_action(callback: types.CallbackQuery):
                                               reply_markup=keyboards.back)
         except Exception as error:
             await callback.message.answer(
-                text=f'Какая-то ошибка!\nПопробуйте сначала!\nError: {error}',
+                text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!',
                 reply_markup=keyboards.back)
-            logging.info('%error', error)
+            logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 async def picture_success_select(message: types.Message):
@@ -247,14 +242,13 @@ async def picture_success_send(callback: types.CallbackQuery):
                 await callback.message.answer_document(file,
                                                        reply_markup=keyboards.back)
         else:
-            await callback.message.answer(text='Файл не найден!',
+            await callback.message.answer(text='❗ Файл не найден!',
                                           reply_markup=keyboards.back)
     except Exception as error:
         await callback.message.answer(
-            text=f'Какая-то ошибка!\nПопробуйте сначала!\nError: {error}',
+            text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!',
             reply_markup=keyboards.back)
-        await UserState.tools_menu.set()
-        logging.info('%error', error)
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 # компануем в обработчик
@@ -271,9 +265,9 @@ def register_handlers_tools(dp: Dispatcher):
                                        UserState.tools_dmp_search))
     dp.register_message_handler(tools_menu,
                                 text='Инструменты🛠',
-                                state=[UserState.auth_mr,
+                                state=(UserState.auth_mr,
                                        UserState.auth_kas,
-                                       UserState.auth_citimanager])
+                                       UserState.auth_cm))
     dp.register_message_handler(planogram_choice,
                                 text='Планограммы🧮',
                                 state=UserState.tools_menu)
