@@ -32,6 +32,8 @@ class UserState(StatesGroup):
     practice_menu_kas = State()
     practice_menu_cm = State()
 
+    practice_manage_cm = State()
+
     practice_take_part_mr = State()
     practice_take_part_mr_confirm = State()
     practice_take_part_mr_photo = State()
@@ -45,6 +47,8 @@ class UserState(StatesGroup):
 
     practice_requests_show_kas = State()
     practice_requests_show_cm = State()
+
+    practice_make_suggest = State()
 
     ratings_menu_mr = State()
 

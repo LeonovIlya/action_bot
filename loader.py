@@ -1,9 +1,13 @@
 from aiogram import Bot, types, Dispatcher
+from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 import config
 from utils.db_ops import BotDB
 
 bot = Bot(token=config.BOT_TOKEN, parse_mode=types.ParseMode.HTML)
-dp = Dispatcher(bot, storage=MemoryStorage())
+
+storage = RedisStorage2()
+
+dp = Dispatcher(bot, storage=storage)
 db = BotDB('data.db')

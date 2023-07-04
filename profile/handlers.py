@@ -67,8 +67,8 @@ async def hr_documents(message: types.Message):
 
 
 async def poll(message: types.Message):
-    await message.answer(text='Данная функция в разработке',
-                         reply_markup=keyboards.back)
+    pass
+    await message.answer(text='')
 
 
 def register_handlers_profile(dp: Dispatcher):

@@ -38,6 +38,97 @@ async def practice_menu_cm(message: types.Message, state: FSMContext):
     await UserState.practice_menu_cm.set()
 
 
+async def manage_practice(message: types.Message):
+    try:
+        region = await db.get_one(
+            await queries.get_value(
+                value='region',
+                table='users'
+            ),
+            tg_id=int(message.from_user.id)
+        )
+        data = await db.get_all(queries.BP_NAME,
+                                region=region[0],
+                                over=False)
+        if data:
+            await message.answer(text='Выберите практику для управления:',
+                                 reply_markup=keyboards.back)
+            for i in data:
+                datetime_start = datetime.datetime.strptime(i[2],
+                                                            '%Y-%m-%d %H:%M:%S')
+                datetime_stop = datetime.datetime.strptime(i[3],
+                                                           '%Y-%m-%d %H:%M:%S')
+                start = datetime_start.strftime('%d %B %Y')
+                stop = datetime_stop.strftime('%d %B %Y')
+                file = AsyncPath(str(i[4]))
+                keyboard = InlineKeyboardMarkup()
+                keyboard.insert(
+                    InlineKeyboardButton('Управлять',
+                                         callback_data=f'{i[0]}'))
+                if await file.is_file():
+                    async with aiofiles.open(str(i[4]), 'rb') as file:
+                        await message.answer_photo(photo=file,
+                                                   caption=f'<b>'
+                                                           f'{str(i[0])}</b'
+                                                           f'>\n\n'
+                                                           f'{str(i[1])}\n\n'
+                                                           f'<b>Дата '
+                                                           f'начала:</b>\n'
+                                                           f'{str(start)}\n\n'
+                                                           f'<b>Дата '
+                                                           f'окончания:</b>\n'
+                                                           f'{str(stop)}',
+                                                   reply_markup=keyboard)
+                else:
+                    await message.answer(text=f'<b>'
+                                              f'{str(i[0])}</b>\n\n '
+                                              f'{str(i[1])}\n\n'
+                                              f'<b>Дата начала:</b>\n '
+                                              f'{str(start)}\n\n'
+                                              f'<b>Дата окончания:</b>\n '
+                                              f'{str(stop)}',
+                                         reply_markup=keyboard)
+                await UserState.practice_manage_cm.set()
+        else:
+            await message.answer(
+                text='Нет практик для управления!',
+                reply_markup=keyboards.back)
+    except Exception as error:
+        await message.answer(text='❗ Кажется что-то пошло не так!\n'
+                                  'Попробуйте еще раз!')
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
+
+
+async def select_action_manage(callback: types.CallbackQuery,
+                               state: FSMContext):
+    await callback.bot.answer_callback_query(callback.id)
+    await callback.message.delete()
+    await state.update_data(bp_name=str(callback.data))
+    await callback.message.answer(text='Выберите действие:',
+                                  reply_markup=keyboards.back)
+    manage_keyboard = InlineKeyboardMarkup()
+    manage_keyboard.add(
+        InlineKeyboardButton('Изменить название',
+                             callback_data='change_name'))
+    manage_keyboard.add(
+        InlineKeyboardButton('Изменить описание',
+                             callback_data='change_desc'))
+    manage_keyboard.add(
+        InlineKeyboardButton('Изменить картинку',
+                             callback_data='change_pic'))
+    manage_keyboard.add(
+        InlineKeyboardButton('Изменить дату начала',
+                             callback_data='change_start'))
+    manage_keyboard.add(
+        InlineKeyboardButton('Изменить дату окончания',
+                             callback_data='change_stop'))
+    manage_keyboard.add(
+        InlineKeyboardButton('Удалить практику',
+                             callback_data='delete_bp'))
+    await callback.message.answer(text=str(callback.data),
+                                  reply_markup=manage_keyboard)
+
+
 async def get_current_practice(message: types.Message):
     try:
         region = await db.get_one(
@@ -49,12 +140,12 @@ async def get_current_practice(message: types.Message):
         )
         data = await db.get_all(queries.BP_NAME,
                                 region=region[0],
-                                is_active=True)
+                                is_active=True,
+                                over=False)
         if data:
             await message.answer(text='Практики, доступные на данный момент:',
                                  reply_markup=keyboards.back)
-            current_practice = [i for i in data]
-            for i in current_practice:
+            for i in data:
                 datetime_start = datetime.datetime.strptime(i[2],
                                                             '%Y-%m-%d %H:%M:%S')
                 datetime_stop = datetime.datetime.strptime(i[3],
@@ -299,6 +390,7 @@ async def add_new_practice(message: types.Message, state: FSMContext):
                       datetime_start=data['date_start'],
                       datetime_stop=data['date_stop'],
                       is_active=True,
+                      over=False,
                       file_link=destination)
         await message.answer(text='Успешно добавлено',
                              reply_markup=keyboards.back)
@@ -319,7 +411,8 @@ async def practice_requests_kas(message: types.Message):
         )
         data = await db.get_all(queries.BP_NAME,
                                 region=region[0],
-                                is_active=True)
+                                is_active=True,
+                                over=False)
         if data:
             await message.answer(text='Практики, доступные на данный момент:',
                                  reply_markup=keyboards.back)
@@ -411,7 +504,8 @@ async def practice_requests_cm(message: types.Message):
         )
         data = await db.get_all(queries.BP_NAME,
                                 region=region[0],
-                                is_active=True)
+                                is_active=True,
+                                over=False)
         if data:
             await message.answer(text='Практики, доступные на данный момент:',
                                  reply_markup=keyboards.back)
@@ -493,8 +587,39 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
 
 
 async def make_suggest(message: types.Message):
-    await message.answer(text='Данная функция в разработке',
+    await message.answer(text='Здесь вы можете отправить '
+                              'СитиМенеджеру предложения по Лучшим '
+                              'Практикам.\n'
+                              'Напишите и отправьте своё предложение или '
+                              'нажмите "Назад".',
                          reply_markup=keyboards.back)
+    await UserState.practice_make_suggest.set()
+
+
+async def send_suggest(message: types.Message):
+    try:
+        text_to_send = str(message.text)
+        user = await db.get_one(queries.PROFILE,
+                                tg_id=int(message.from_user.id))
+        cm_tg_id = await db.get_one(
+            await queries.get_value(
+                value='tg_id',
+                table='users'
+            ),
+            username=user[7]
+        )
+        await message.bot.send_message(chat_id=cm_tg_id[0],
+                                       text=f'Пришло новое сообщение от: '
+                                            f'{user[0]}\n'
+                                            f'Тема: Предложения по Лучшим '
+                                            f'Практикам\n\n'
+                                            f'{text_to_send}')
+        await message.answer(text='Ваше предложение отправлено СитиМенеджеру!',
+                             reply_markup=keyboards.back)
+    except Exception as error:
+        await message.answer(text='❗ Кажется что-то пошло не так!\n'
+                                  'Попробуйте еще раз!')
+        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
 def register_handlers_best_practice(dp: Dispatcher):
@@ -504,22 +629,20 @@ def register_handlers_best_practice(dp: Dispatcher):
                                        UserState.practice_take_part_mr_confirm,
                                        UserState.practice_take_part_mr_photo,
                                        UserState.practice_take_part_mr_desc))
-
     dp.register_message_handler(practice_menu_kas,
                                 text='Назад↩',
                                 state=(UserState.practice_menu_kas,
                                        UserState.practice_requests_show_kas))
-
     dp.register_message_handler(practice_menu_cm,
                                 text='Назад↩',
                                 state=(UserState.practice_menu_cm,
+                                       UserState.practice_manage_cm,
                                        UserState.practice_requests_show_cm,
                                        UserState.practice_add,
                                        UserState.practice_add_desc,
                                        UserState.practice_add_start,
                                        UserState.practice_add_stop,
                                        UserState.practice_add_picture))
-
     dp.register_message_handler(practice_menu_mr,
                                 text='Практики🗣',
                                 state=UserState.auth_mr)
@@ -529,7 +652,6 @@ def register_handlers_best_practice(dp: Dispatcher):
     dp.register_message_handler(practice_menu_cm,
                                 text='Практики🗣',
                                 state=UserState.auth_cm)
-
     dp.register_message_handler(get_current_practice,
                                 text='Текущие практики🎯',
                                 state=UserState.practice_menu_mr)
@@ -542,6 +664,14 @@ def register_handlers_best_practice(dp: Dispatcher):
                                 state=UserState.practice_take_part_mr_photo)
     dp.register_message_handler(take_part_take_description,
                                 state=UserState.practice_take_part_mr_desc)
+
+    dp.register_message_handler(manage_practice,
+                                text='Управлять текущими🔀',
+                                state=UserState.practice_menu_cm)
+    dp.register_callback_query_handler(select_action_manage,
+                                       state=UserState.practice_manage_cm)
+
+
 
     dp.register_message_handler(add_new_practice_add_name,
                                 text='Добавить новую➕',
@@ -557,22 +687,20 @@ def register_handlers_best_practice(dp: Dispatcher):
     dp.register_message_handler(add_new_practice,
                                 content_types=['photo'],
                                 state=UserState.practice_add_picture)
-
     dp.register_message_handler(practice_requests_kas,
                                 text='Смотреть заявки📬',
                                 state=UserState.practice_menu_kas)
     dp.register_callback_query_handler(practice_requests_show_kas,
                                        state=UserState.practice_requests_show_kas)
-
     dp.register_message_handler(practice_requests_cm,
                                 text='Смотреть заявки📬',
                                 state=UserState.practice_menu_cm)
-
     dp.register_callback_query_handler(practice_requests_show_cm,
                                        state=UserState.practice_requests_show_cm)
-
     dp.register_message_handler(make_suggest,
                                 text='Предложения📝',
                                 state=(UserState.practice_menu_mr,
                                        UserState.practice_menu_kas,
                                        UserState.practice_menu_cm))
+    dp.register_message_handler(send_suggest,
+                                state=UserState.practice_make_suggest)
