@@ -1,3 +1,4 @@
+import logging
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 
@@ -48,9 +49,10 @@ async def ratings_mr(message: types.Message):
                                               select_name='kas',
                                               tg_id=int(message.from_user.id))
             result4 = await get_result_rating(rating_name=i,
-                                              select_name='cm',
+                                              select_name='citimanager',
                                               tg_id=int(message.from_user.id))
-            await message.answer(text=f'<b>Ваше место по {RATINGS_DICT[i]}:</b>\n '
+            await message.answer(text=f'<b>Ваше место по {RATINGS_DICT[i]}:'
+                                      f'</b>\n'
                                       f'<b>По КАС:</b> {result3[0]}\n'
                                       f'<b>По СитиМенеджеру:</b> {result4[0]}\n'
                                       f'<b>По региону:</b> {result2[0]}\n'

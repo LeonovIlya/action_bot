@@ -33,6 +33,12 @@ class UserState(StatesGroup):
     practice_menu_cm = State()
 
     practice_manage_cm = State()
+    practice_manage_action_cm = State()
+    practice_manage_change_name = State()
+    practice_manage_change_desc = State()
+    practice_manage_change_pic = State()
+    practice_manage_change_start = State()
+    practice_manage_change_stop = State()
 
     practice_take_part_mr = State()
     practice_take_part_mr_confirm = State()
@@ -48,8 +54,13 @@ class UserState(StatesGroup):
     practice_requests_show_kas = State()
     practice_requests_show_cm = State()
 
-    practice_make_suggest = State()
+    practice_send_to_channel_cm = State()
+
+    practice_make_suggest_mr = State()
+    practice_make_suggest_kas = State()
 
     ratings_menu_mr = State()
 
     profile_menu = State()
+    profile_menu_cm = State()
+    profile_comments = State()

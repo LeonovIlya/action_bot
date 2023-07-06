@@ -36,7 +36,6 @@ class BotDB:
         else:
             values = ''
         async with self.connection.execute(query, values) as cursor:
-            print(query, values)
             return await cursor.fetchone()
 
     async def get_all(self, query: str, **kwargs):
@@ -49,14 +48,12 @@ class BotDB:
         else:
             values = ''
         async with self.connection.execute(query, values) as cursor:
-            print(query, values)
             return await cursor.fetchall()
 
     async def post(self, query: str, **kwargs):
         if self.connection is None:
             await self.create_connection()
         values = list(kwargs.values())
-        print(query, values)
         await self.connection.execute(query, values)
         await self.connection.commit()
         logging.info(f'NEW INSERT:\nQUERY: {query}\nVALUES: {values}')

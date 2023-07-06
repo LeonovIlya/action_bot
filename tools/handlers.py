@@ -1,7 +1,7 @@
 import aiofiles
+import asyncio
 import logging
 import re
-import time
 from aiofiles import os as aios
 from aiopath import AsyncPath
 
@@ -70,8 +70,8 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
             await state.update_data(shop_name=callback.data)
             await UserState.tools_plan_name.set()
         except Exception as error:
-            await message.answer(text='❗ Кажется что-то пошло не так!\n'
-                                      'Попробуйте еще раз!')
+            await callback.message.answer(
+                text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
             logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
@@ -88,12 +88,11 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
             name=name,
             shop_name=data['shop_name'],
             cluster=data['cluster'])
-        print(file_link[0])
         file = AsyncPath(str(file_link[0]))
         if await file.is_file():
             await callback.answer(text='Отправляю файл...',
                                   show_alert=False)
-            time.sleep(1)
+            await asyncio.sleep(0.5)
             async with aiofiles.open(str(file_link[0]), 'rb') as file:
                 await callback.message.answer_chat_action(
                     action='upload_document')
@@ -121,7 +120,6 @@ async def dmp_search(message: types.Message):
         try:
             query = await db.get_one(queries.DMP_TT_QUERY,
                                      tt_num=tt_num)
-            print(query)
             if query:
                 if query[0]:
                     await message.answer(
@@ -178,7 +176,7 @@ async def get_promo_action(callback: types.CallbackQuery):
             if await file.is_file():
                 await callback.answer(text='Отправляю файл...',
                                       show_alert=False)
-                time.sleep(1)
+                await asyncio.sleep(0.5)
                 await callback.message.delete()
                 await callback.message.answer_chat_action(
                     action='upload_document')
@@ -228,13 +226,12 @@ async def picture_success_get(callback: types.CallbackQuery):
 
 
 async def picture_success_send(callback: types.CallbackQuery):
-    print(callback.data)
     try:
         file = AsyncPath(f'./files/k_u/{str(callback.data)}')
         if await file.is_file():
             await callback.answer(text='Отправляю файл...',
                                   show_alert=False)
-            time.sleep(1)
+            await asyncio.sleep(0.5)
             await callback.message.delete()
             await callback.message.answer_chat_action(action='upload_document')
             async with aiofiles.open(f'./files/k_u/{str(callback.data)}',

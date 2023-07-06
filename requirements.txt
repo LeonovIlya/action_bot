@@ -1,7 +1,8 @@
 aiogram==2.25.1
-python-dotenv
 aiosqlite
 aiofiles
 aiopath
+APScheduler
 openpyxl
+python-dotenv
 redis

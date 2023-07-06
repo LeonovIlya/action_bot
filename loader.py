@@ -1,6 +1,6 @@
 from aiogram import Bot, types, Dispatcher
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import config
 from utils.db_ops import BotDB
@@ -11,3 +11,4 @@ storage = RedisStorage2()
 
 dp = Dispatcher(bot, storage=storage)
 db = BotDB('data.db')
+scheduler = AsyncIOScheduler()

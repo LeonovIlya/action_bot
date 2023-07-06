@@ -1,5 +1,7 @@
+import aiofiles
 import logging
 import re
+from aiopath import AsyncPath
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 
@@ -37,10 +39,11 @@ async def kpi_mr(message: types.Message):
                                       f'<b><u>OSA:</u></b> {query[3]:.2%} |'
                                       f' {query[4]:.2%} |'
                                       f' {query[5]:.2%}\n'
-                                      f'<b><u>TT:</u></b> {query[6]} | {query[7]} |'
+                                      f'<b><u>TT:</u></b> {query[6]:.2f} |'
+                                      f' {query[7]:.2f} |'
                                       f' {query[8]:.2%}\n'
-                                      f'<b><u>Visits:</u></b> {query[9]} |'
-                                      f' {query[10]} |'
+                                      f'<b><u>Visits:</u></b> {query[9]:.2f} |'
+                                      f' {query[10]:.2f} |'
                                       f' {query[11]:.2%}',
                                  reply_markup=keyboards.back)
         else:
@@ -80,7 +83,8 @@ async def kpi_search_tt(message: types.Message):
                          f'<b><u>OSA:</u></b> {query[6]:.2%} |'
                          f' {query[7]:.2%} |'
                          f' {query[8]:.2%}\n'
-                         f'<b><u>TT:</u></b> {query[9]} | {query[10]} |'
+                         f'<b><u>TT:</u></b> {query[9]:.2f} |'
+                         f' {query[10]:.2f} |'
                          f' {query[11]:.2%}',
                     reply_markup=keyboards.back)
             else:
@@ -94,8 +98,23 @@ async def kpi_search_tt(message: types.Message):
                 f'Error: {error}, user: {int(message.from_user.id)}')
 
     else:
-        await message.answer(text='❗ Номер ТТ не соответствует формату ввода!\n'
-                                  'Введите еще раз!',
+        await message.answer(
+            text='❗ Номер ТТ не соответствует формату ввода!\n'
+                 'Введите еще раз!',
+            reply_markup=keyboards.back)
+
+
+async def get_bonus_info(message: types.Message):
+    file_link = './files/kpi/bonus.jpg'
+    file = AsyncPath(file_link)
+    if await file.is_file():
+        await message.answer_chat_action(
+            action='upload_document')
+        async with aiofiles.open(file_link, 'rb') as photo:
+            await message.answer_photo(photo=photo,
+                                       reply_markup=keyboards.back)
+    else:
+        await message.answer(text='Файл не найден!',
                              reply_markup=keyboards.back)
 
 
@@ -117,3 +136,7 @@ def register_handlers_kpi(dp: Dispatcher):
                                 state=UserState.kpi_menu)
     dp.register_message_handler(kpi_search_tt,
                                 state=UserState.kpi_search_tt)
+
+    dp.register_message_handler(get_bonus_info,
+                                text='Информация по бонусу💰',
+                                state=UserState.kpi_menu)

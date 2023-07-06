@@ -36,6 +36,7 @@ tools_menu = ReplyKeyboardMarkup(keyboard=[
 
 kpi_menu = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Мой KPI📈'), KeyboardButton(text='KPI TT🏬')],
+    [KeyboardButton(text='Информация по бонусу💰')],
     [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True)
@@ -69,6 +70,7 @@ practice_menu_cm = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Управлять текущими🔀')],
     [KeyboardButton(text='Смотреть заявки📬')],
     [KeyboardButton(text='Добавить новую➕')],
+    [KeyboardButton(text='Отправить фото в канал⤴')],
     [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True
@@ -79,6 +81,17 @@ profile_menu = ReplyKeyboardMarkup(keyboard=[
      KeyboardButton(text='Карьерный рост🔝')],
     [KeyboardButton(text='Кадровые документы🗃'),
      KeyboardButton(text='Опрос💬')],
+    [KeyboardButton(text='Выйти из бота🚪')],
+    [KeyboardButton(text='Главное меню📱')]],
+    resize_keyboard=True,
+    one_time_keyboard=True
+)
+
+profile_menu_cm = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Мой профиль🗂'),
+     KeyboardButton(text='Карьерный рост🔝')],
+    [KeyboardButton(text='Кадровые документы🗃')],
+    [KeyboardButton(text='Выйти из бота🚪')],
     [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True
@@ -99,6 +112,36 @@ main_menu = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True)
+
+
+confirm_keyboard = InlineKeyboardMarkup()
+confirm_keyboard.insert(
+    InlineKeyboardButton('Да',
+                         callback_data='bp_yes'))
+confirm_keyboard.insert(
+    InlineKeyboardButton('Нет',
+                         callback_data='bp_no'))
+
+
+manage_keyboard = InlineKeyboardMarkup()
+manage_keyboard.add(
+    InlineKeyboardButton('Изменить название',
+                         callback_data='change_name'))
+manage_keyboard.add(
+    InlineKeyboardButton('Изменить описание',
+                         callback_data='change_desc'))
+manage_keyboard.add(
+    InlineKeyboardButton('Изменить картинку',
+                         callback_data='change_pic'))
+manage_keyboard.add(
+    InlineKeyboardButton('Изменить дату начала',
+                         callback_data='change_start'))
+manage_keyboard.add(
+    InlineKeyboardButton('Изменить дату окончания',
+                         callback_data='change_stop'))
+manage_keyboard.add(
+    InlineKeyboardButton('Удалить практику',
+                         callback_data='delete_bp'))
 
 
 # формируем инлайн клавиатуру

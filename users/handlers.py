@@ -111,19 +111,6 @@ async def password_check(message: types.Message, state: FSMContext):
         logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
 
-async def logout(message: types.Message, state: FSMContext):
-    try:
-        await db.post(queries.LOGOUT,
-                      tg_id=message.from_user.id)
-        await message.answer(text='Вы успешно разлогинились!')
-        await state.reset_data()
-        await state.finish()
-    except Exception as error:
-        await message.answer(text='Кажется что-то пошло не так!\n'
-                                  'Попробуйте еще раз!')
-        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
-
-
 # компануем в обработчик
 def register_handlers_users(dp: Dispatcher):
     dp.register_message_handler(start_auth,
@@ -135,7 +122,4 @@ def register_handlers_users(dp: Dispatcher):
                                 state=UserState.start_auth_get_password)
     dp.register_message_handler(start_menu_and_state,
                                 text='Главное меню📱',
-                                state='*')
-    dp.register_message_handler(logout,
-                                commands=['logout'],
                                 state='*')
