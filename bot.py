@@ -18,8 +18,18 @@ logging.getLogger('apscheduler.executors.default').propagate = False
 
 
 def set_scheduled_jobs():
-    scheduler.add_job(check_bp_start, "interval", seconds=5, args=(dp,))
-    scheduler.add_job(check_bp_stop, "interval", seconds=5, args=(dp,))
+    scheduler.add_job(func=check_bp_start,
+                      trigger='cron',
+                      hour=23,
+                      minute=10,
+                      timezone='Europe/Moscow',
+                      args=(dp,))
+    scheduler.add_job(func=check_bp_stop,
+                      trigger='cron',
+                      hour=23,
+                      minute=15,
+                      timezone='Europe/Moscow',
+                      args=(dp,))
 
 
 async def start():
@@ -48,6 +58,7 @@ async def start():
         scheduler.start()
         await dp.start_polling(bot)
     finally:
+        print('stop')
         await db.close()
         await dp.storage.close()
         await dp.storage.wait_closed()
@@ -55,7 +66,10 @@ async def start():
 
 
 if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
     try:
-        asyncio.get_event_loop().run_until_complete(start())
+        loop.run_until_complete(start())
     except KeyboardInterrupt:
-        logger.info("Bot stopped")
+        logger.info("Bot stopped by keyboard")
+    finally:
+        loop.close()

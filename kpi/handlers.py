@@ -3,13 +3,12 @@ import logging
 import re
 from aiopath import AsyncPath
 from aiogram import Dispatcher, types
-from aiogram.dispatcher import FSMContext
 
 from loader import db
 from utils import keyboards, queries
 from utils.states import UserState
 
-r_str = r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,' \
+R_STR = r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,' \
         r')|(\s№\s)|(\sг,)'
 
 
@@ -70,7 +69,7 @@ async def kpi_search_tt(message: types.Message):
             query = await db.get_one(queries.KPI_TT_QUERY,
                                      tt_num=tt_num)
             if query:
-                address = re.sub(r_str, '', query[0])
+                address = re.sub(R_STR, '', query[0])
                 await message.answer(
                     text=f'<b>TT № {tt_num}:</b>\n'
                          f'<b>Адрес:</b> {address}\n'

@@ -1,6 +1,5 @@
 import logging
 from aiogram import Dispatcher, types
-from aiogram.dispatcher import FSMContext
 
 from loader import db
 from utils import keyboards, queries
@@ -25,9 +24,8 @@ async def get_result_rating(rating_name: str,
                     tg_id=tg_id))[0]),
             tg_id=tg_id)
     except Exception as error:
-        await message.answer(text='❗ Кажется что-то пошло не так!\n'
-                                  'Попробуйте еще раз!')
-        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
+        logging.info(f'Error: {error}')
+        raise error
 
 
 async def ratings_menu(message: types.Message):
@@ -38,7 +36,7 @@ async def ratings_menu(message: types.Message):
 
 async def ratings_mr(message: types.Message):
     try:
-        for i in RATINGS_DICT.keys():
+        for i in RATINGS_DICT:
             result1 = await db.get_one(
                 await queries.ratings_query_all(column_name=i),
                 tg_id=int(message.from_user.id))

@@ -72,7 +72,7 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
         except Exception as error:
             await callback.message.answer(
                 text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
-            logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
+            logging.info(f'Error: {error}, user: {int(callback.from_user.id)}')
 
 
 # формируем запрос к бд, получаем ответ
@@ -105,7 +105,7 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.answer(
             text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!',
             reply_markup=keyboards.back)
-        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
+        logging.info(f'Error: {error}, user: {int(callback.from_user.id)}')
 
 
 async def dmp_get(message: types.Message):
@@ -145,7 +145,7 @@ async def dmp_search(message: types.Message):
             logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
     else:
-        await message.answer(text='мНомер ТТ не соответствует формату ввода!\n'
+        await message.answer(text='Номер ТТ не соответствует формату ввода!\n'
                                   'Введите еще раз!',
                              reply_markup=keyboards.back)
 
@@ -190,7 +190,7 @@ async def get_promo_action(callback: types.CallbackQuery):
             await callback.message.answer(
                 text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!',
                 reply_markup=keyboards.back)
-            logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
+            logging.info(f'Error: {error}, user: {int(callback.from_user.id)}')
 
 
 async def picture_success_select(message: types.Message):
@@ -245,7 +245,7 @@ async def picture_success_send(callback: types.CallbackQuery):
         await callback.message.answer(
             text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!',
             reply_markup=keyboards.back)
-        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
+        logging.info(f'Error: {error}, user: {int(callback.from_user.id)}')
 
 
 # компануем в обработчик

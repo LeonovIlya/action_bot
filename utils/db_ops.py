@@ -1,7 +1,7 @@
 import logging
 import aiosqlite as asq
 
-from utils.create_tables import tables
+from utils.create_tables import TABLES
 
 
 class BotDB:
@@ -16,7 +16,7 @@ class BotDB:
 
     async def create_table(self):
         async with asq.connect(self._db_file) as conn:
-            await conn.executescript(tables)
+            await conn.executescript(TABLES)
             await conn.commit()
             logging.info('tables created')
             return None
@@ -31,7 +31,7 @@ class BotDB:
             await self.create_connection()
         if kwargs:
             query += ' WHERE ' + ' AND '.join(
-                ['' + k + ' = ?' for k in kwargs.keys()])
+                ['' + k + ' = ?' for k in kwargs])
             values = list(kwargs.values())
         else:
             values = ''
@@ -43,7 +43,7 @@ class BotDB:
             await self.create_connection()
         if kwargs:
             query += ' WHERE ' + ' AND '.join(
-                ['' + k + ' = ?' for k in kwargs.keys()])
+                ['' + k + ' = ?' for k in kwargs])
             values = list(kwargs.values())
         else:
             values = ''
