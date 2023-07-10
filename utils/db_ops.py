@@ -36,7 +36,8 @@ class BotDB:
         else:
             values = ''
         async with self.connection.execute(query, values) as cursor:
-            return await cursor.fetchone()
+            result = await cursor.fetchone()
+            return result
 
     async def get_all(self, query: str, **kwargs):
         if self.connection is None:
@@ -48,7 +49,8 @@ class BotDB:
         else:
             values = ''
         async with self.connection.execute(query, values) as cursor:
-            return await cursor.fetchall()
+            result = await cursor.fetchall()
+            return result
 
     async def post(self, query: str, **kwargs):
         if self.connection is None:

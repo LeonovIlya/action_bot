@@ -1,9 +1,9 @@
 import aiofiles
 import asyncio
-import datetime
 import locale
 import logging
 from aiopath import AsyncPath
+from datetime import datetime as dt
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
@@ -54,10 +54,8 @@ async def manage_practice(message: types.Message):
             await message.answer(text='Выберите практику для управления:',
                                  reply_markup=keyboards.back)
             for i in data:
-                datetime_start = datetime.datetime.strptime(i[2],
-                                                            '%Y-%m-%d %H:%M:%S')
-                datetime_stop = datetime.datetime.strptime(i[3],
-                                                           '%Y-%m-%d %H:%M:%S')
+                datetime_start = dt.strptime(i[2], '%Y-%m-%d %H:%M:%S')
+                datetime_stop = dt.strptime(i[3], '%Y-%m-%d %H:%M:%S')
                 start = datetime_start.strftime('%d %B %Y')
                 stop = datetime_stop.strftime('%d %B %Y')
                 keyboard = InlineKeyboardMarkup()
@@ -115,7 +113,7 @@ async def action_manage(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     match callback.data:
         case 'change_name':
-            await callback.message.delete()
+            await callback.message.delete_reply_markup()
             await callback.message.answer(text='Введите новое название для '
                                                'практики:\n'
                                                '(Не более 45 символов, '
@@ -123,28 +121,29 @@ async def action_manage(callback: types.CallbackQuery, state: FSMContext):
             await UserState.practice_manage_change_name.set()
 
         case 'change_desc':
-            await callback.message.delete()
+            await callback.message.delete_reply_markup()
             await callback.message.answer(text='Введите новое описание для '
                                                'практики:')
             await UserState.practice_manage_change_desc.set()
         case 'change_pic':
-            await callback.message.delete()
+            await callback.message.delete_reply_markup()
             await callback.message.answer(text='Отправьте новую фотографию:')
             await UserState.practice_manage_change_pic.set()
         case 'change_start':
-            await callback.message.delete()
+            await callback.message.delete_reply_markup()
             await callback.message.answer(text='Введите новую дату начала в '
                                                'формате "20-01-2003":')
             await UserState.practice_manage_change_start.set()
         case 'change_stop':
-            await callback.message.delete()
+            await callback.message.delete_reply_markup()
             await callback.message.answer(text='Введите новую дату окончания в'
                                                ' формате "20-01-2003":')
             await UserState.practice_manage_change_stop.set()
         case 'delete_bp':
             await callback.message.answer(text=f'Вы действительно хотите '
                                                f'удалить практику '
-                                               f'{data["bp_name"]}',
+                                               f'<b><u>'
+                                               f'{data["bp_name"]}</u></b>',
                                           reply_markup=keyboards.confirm_keyboard)
         case 'bp_yes':
             try:
@@ -230,8 +229,8 @@ async def manage_change_pic(message: types.Message, state: FSMContext):
 async def manage_change_start(message: types.Message, state: FSMContext):
     try:
         data = await state.get_data()
-        date_start = datetime.datetime.strptime(str(message.text), '%d-%m-%Y')
-        if date_start < datetime.datetime.now():
+        date_start = dt.strptime(str(message.text), '%d-%m-%Y')
+        if date_start < dt.now():
             await message.answer(text='❗ Дата начала должна быть позднее '
                                       'текущей даты!\nВведите дату еще раз!')
         else:
@@ -251,8 +250,8 @@ async def manage_change_start(message: types.Message, state: FSMContext):
 async def manage_change_stop(message: types.Message, state: FSMContext):
     try:
         data = await state.get_data()
-        date_stop = datetime.datetime.strptime(str(message.text), '%d-%m-%Y')
-        if date_stop < datetime.datetime.now():
+        date_stop = dt.strptime(str(message.text), '%d-%m-%Y')
+        if date_stop < dt.now():
             await message.answer(text='❗ Дата окончания должна быть позднее '
                                       'текущей даты!\nВведите дату еще раз!')
         else:
@@ -263,8 +262,7 @@ async def manage_change_stop(message: types.Message, state: FSMContext):
                 ),
                 name=data['bp_name']
             )
-            date_start = datetime.datetime.strptime(date_start[0],
-                                                    '%Y-%m-%d %H:%M:%S')
+            date_start = dt.strptime(date_start[0], '%Y-%m-%d %H:%M:%S')
             if date_stop < date_start:
                 await message.answer(text='❗ Дата окончания должна быть '
                                           'позднее даты начала!\nВведите '
@@ -297,13 +295,12 @@ async def get_current_practice(message: types.Message):
                                 is_active=True,
                                 over=False)
         if data:
-            await message.answer(text='Практики, доступные на данный момент:',
+            await message.answer(text='Практики вашего региона, доступные на '
+                                      'данный момент:',
                                  reply_markup=keyboards.back)
             for i in data:
-                datetime_start = datetime.datetime.strptime(i[2],
-                                                            '%Y-%m-%d %H:%M:%S')
-                datetime_stop = datetime.datetime.strptime(i[3],
-                                                           '%Y-%m-%d %H:%M:%S')
+                datetime_start = dt.strptime(i[2], '%Y-%m-%d %H:%M:%S')
+                datetime_stop = dt.strptime(i[3], '%Y-%m-%d %H:%M:%S')
                 start = datetime_start.strftime('%d %B %Y')
                 stop = datetime_stop.strftime('%d %B %Y')
                 file = AsyncPath(str(i[4]))
@@ -336,7 +333,7 @@ async def get_current_practice(message: types.Message):
                                          reply_markup=inline_keyboard)
         else:
             await message.answer(
-                text='Доступных практик на данный момент нет!',
+                text='Доступных практик в вашем регионе на данный момент нет!',
                 reply_markup=keyboards.back)
     except Exception as error:
         await message.answer(text='❗ Кажется что-то пошло не так!\n'
@@ -362,6 +359,7 @@ async def take_part(callback: types.CallbackQuery, state: FSMContext):
             await callback.answer(text='Вы уже участвуете!',
                                   show_alert=False)
         else:
+            await callback.bot.answer_callback_query(callback.id)
             await state.update_data(bp_name=str(callback.data))
             await state.update_data(username=str(username[0]))
             await callback.message.answer(text=f'Вы уверены, что хотите '
@@ -412,12 +410,20 @@ async def take_part_take_photo(message: types.Message, state: FSMContext):
 async def take_part_take_description(message: types.Message,
                                      state: FSMContext):
     try:
+        kas = await db.get_one(
+            await queries.get_value(
+                value='kas',
+                table='users'
+            ),
+            tg_id=int(message.from_user.id)
+        )
         data = await state.get_data()
         await db.post(queries.INSERT_PRACTICE_MR,
                       best_practice=str(data['bp_name']),
                       username=str(data['username']),
+                      kas=kas[0],
                       tg_id=int(message.from_user.id),
-                      datetime_added=datetime.datetime.now(),
+                      datetime_added=dt.now(),
                       desc=str(message.text),
                       file_link=str(data['destination']),
                       kas_checked=False,
@@ -472,21 +478,23 @@ async def add_new_practice_add_desc(message: types.Message, state: FSMContext):
 async def add_new_practice_add_start(message: types.Message,
                                      state: FSMContext):
     await state.update_data(desc=str(message.text))
-    await message.answer(text='Введите дату начала в формате "20-01-2003":',
+    await message.answer(text='Введите дату <u>начала</u> в формате '
+                              '"20-01-2003":',
                          reply_markup=keyboards.back)
     await UserState.practice_add_start.set()
 
 
 async def add_new_practice_add_stop(message: types.Message, state: FSMContext):
     try:
-        date_start = datetime.datetime.strptime(str(message.text), '%d-%m-%Y')
-        if date_start < datetime.datetime.now():
+        date_start = dt.strptime(str(message.text), '%d-%m-%Y')
+        if date_start < dt.now():
             await message.answer(text='❗ Дата начала должна быть позднее '
                                       'текущей даты!\nВведите дату еще раз!')
         else:
-            await state.update_data(date_start=date_start)
-            await message.answer(text='Введите дату окончания в формате '
-                                      '"20-01-2003":',
+            await state.update_data(date_start=date_start.
+                                    strftime('%Y-%m-%d %H:%M:%S'))
+            await message.answer(text='Введите дату <u>окончания</u> в формате'
+                                      ' "20-01-2003":',
                                  reply_markup=keyboards.back)
             await UserState.practice_add_stop.set()
     except ValueError:
@@ -496,18 +504,22 @@ async def add_new_practice_add_stop(message: types.Message, state: FSMContext):
 async def add_new_practice_add_picture(message: types.Message,
                                        state: FSMContext):
     try:
-        date_stop = datetime.datetime.strptime(str(message.text), '%d-%m-%Y')
-        if date_stop < datetime.datetime.now():
+        date_stop = dt.strptime(str(message.text), '%d-%m-%Y')
+        if date_stop < dt.now():
             await message.answer(text='❗ Дата окончания должна быть позднее '
                                       'текущей даты!\nВведите дату еще раз!')
         else:
             data = await state.get_data()
-            if date_stop < data['date_start']:
+            date_start = dt.strptime(data['date_start'], '%Y-%m-%d %H:%M:%S')
+            print(type(date_start))
+            print(type(date_stop))
+            if date_stop <= date_start:
                 await message.answer(text='❗ Дата окончания должна быть '
                                           'позднее даты начала!\nВведите '
                                           'дату еще раз!')
             else:
-                await state.update_data(date_stop=date_stop)
+                await state.update_data(date_stop=date_stop.
+                                        strftime('%Y-%m-%d %H:%M:%S'))
                 await message.answer(text='Добавьте фотографию для новой '
                                           'практики:',
                                      reply_markup=keyboards.back)
@@ -542,7 +554,7 @@ async def add_new_practice(message: types.Message, state: FSMContext):
                       name=data['name'],
                       desc=data['desc'],
                       user_added=username[0],
-                      datetime_added=datetime.datetime.now(),
+                      datetime_added=dt.now(),
                       datetime_start=data['date_start'],
                       datetime_stop=data['date_stop'],
                       is_active=True,
@@ -619,8 +631,16 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
                                                      'отклонена '
                                                      'Супервайзером!')
             case _:
+                kas = await db.get_one(
+                    await queries.get_value(
+                        value='username',
+                        table='users'
+                    ),
+                    tg_id=int(callback.from_user.id)
+                )
                 photo = await db.get_one(queries.BP_PHOTOS,
                                          best_practice=str(callback.data),
+                                         kas=kas[0],
                                          kas_checked=False,
                                          kas_approved=False,
                                          cm_checked=False,

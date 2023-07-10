@@ -43,7 +43,9 @@ async def kpi_mr(message: types.Message):
                                       f' {query[8]:.2%}\n'
                                       f'<b><u>Visits:</u></b> {query[9]:.2f} |'
                                       f' {query[10]:.2f} |'
-                                      f' {query[11]:.2%}',
+                                      f' {query[11]:.2%}\n'
+                                      f'<b><u>ISA-OSA:</u></b>'
+                                      f' {query[11]:.5f}',
                                  reply_markup=keyboards.back)
         else:
             await message.answer(text='К сожалению, данная функция '
@@ -84,7 +86,8 @@ async def kpi_search_tt(message: types.Message):
                          f' {query[8]:.2%}\n'
                          f'<b><u>TT:</u></b> {query[9]:.2f} |'
                          f' {query[10]:.2f} |'
-                         f' {query[11]:.2%}',
+                         f' {query[11]:.2%}\n'
+                         f'<b><u>ISA-OSA:</u></b> {query[11]:.5f}',
                     reply_markup=keyboards.back)
             else:
                 await message.answer(text='❗ ТТ с таким номером не найдена!\n'

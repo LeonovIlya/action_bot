@@ -18,16 +18,16 @@ logging.getLogger('apscheduler.executors.default').propagate = False
 
 
 def set_scheduled_jobs():
-    scheduler.add_job(func=check_bp_start,
-                      trigger='cron',
-                      hour=23,
-                      minute=10,
-                      timezone='Europe/Moscow',
-                      args=(dp,))
     scheduler.add_job(func=check_bp_stop,
                       trigger='cron',
-                      hour=23,
-                      minute=15,
+                      hour=0,
+                      minute=1,
+                      timezone='Europe/Moscow',
+                      args=(dp,))
+    scheduler.add_job(func=check_bp_start,
+                      trigger='cron',
+                      hour=0,
+                      minute=2,
                       timezone='Europe/Moscow',
                       args=(dp,))
 

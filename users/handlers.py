@@ -64,7 +64,7 @@ async def start_no_auth(message: types.Message, state: FSMContext):
 
 
 async def start_auth(message: types.Message):
-    await message.answer(text='Введите ваш логин:')
+    await message.answer(text='Введите ваш логин (номер территории):')
     await UserState.start_auth_get_login.set()
 
 
@@ -80,8 +80,8 @@ async def login_check(message: types.Message, state: FSMContext):
             await message.answer(text='Введите ваш пароль:')
             await UserState.start_auth_get_password.set()
         else:
-            await message.answer(text='Кажется вы ошиблись, попробуйте еще '
-                                      'раз!')
+            await message.answer(text='Кажется вы ошиблись в логине, '
+                                      'попробуйте еще раз!')
     except Exception as error:
         await message.answer(text='Кажется что-то пошло не так!\n'
                                   'Попробуйте еще раз!')
@@ -105,6 +105,9 @@ async def password_check(message: types.Message, state: FSMContext):
                           ter_num=str(data['ter_num']))
             await message.answer(text='Добро пожаловать!')
             await start_menu_and_state(message, state)
+        else:
+            await message.answer(text='Кажется вы ошиблись в пароле, '
+                                      'попробуйте еще раз!')
     except Exception as error:
         await message.answer(text='Кажется что-то пошло не так!\n'
                                   'Попробуйте еще раз!')

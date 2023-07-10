@@ -6,7 +6,7 @@ from utils import keyboards, queries
 from utils.states import UserState
 
 RATINGS_DICT = {'[%_pss]': '% PSS', '[%_osa]': '% OSA', '[%_tt]': '% TT',
-                '[%_visits]': '% Visits'}
+                '[%_visits]': '% Visits', 'isa_osa': 'ISA-OSA'}
 
 
 async def get_result_rating(rating_name: str,
@@ -16,13 +16,15 @@ async def get_result_rating(rating_name: str,
         return await db.get_one(
             await queries.ratings_query(
                 column_name=rating_name,
+                position='mr',
                 where_name=select_name,
                 where_value=(await db.get_one(
                     await queries.get_value(
                         value=select_name,
                         table='users'),
                     tg_id=tg_id))[0]),
-            tg_id=tg_id)
+            tg_id=tg_id
+        )
     except Exception as error:
         logging.info(f'Error: {error}')
         raise error
@@ -49,12 +51,19 @@ async def ratings_mr(message: types.Message):
             result4 = await get_result_rating(rating_name=i,
                                               select_name='citimanager',
                                               tg_id=int(message.from_user.id))
+            print(result3)
+            print(type(result3))
+            print(result3[0], result3[1])
             await message.answer(text=f'<b>Ваше место по {RATINGS_DICT[i]}:'
                                       f'</b>\n'
-                                      f'<b>По КАС:</b> {result3[0]}\n'
-                                      f'<b>По СитиМенеджеру:</b> {result4[0]}\n'
-                                      f'<b>По региону:</b> {result2[0]}\n'
-                                      f'<b>По стране:</b> {result1[0]}\n',
+                                      f'<b>По КАС:</b> '
+                                      f'{result3[0]} из {result3[1]}\n'
+                                      f'<b>По СитиМенеджеру:</b> '
+                                      f'{result4[0]} из {result4[1]}\n'
+                                      f'<b>По региону:</b> '
+                                      f'{result2[0]} из {result2[1]}\n'
+                                      f'<b>По стране:</b> '
+                                      f'{result1[0]} из {result1[1]}\n',
                                  reply_markup=keyboards.back)
     except Exception as error:
         await message.answer(text='❗ Кажется что-то пошло не так!\n'

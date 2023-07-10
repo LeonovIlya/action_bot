@@ -121,7 +121,7 @@ async def dmp_search(message: types.Message):
             query = await db.get_one(queries.DMP_TT_QUERY,
                                      tt_num=tt_num)
             if query:
-                if query[0]:
+                if query[0] or query[1] or query[2]:
                     await message.answer(
                         text=f'<b>TT № {tt_num}:</b>\n\n'
                              f'<u>Оборудование:</u>\n'
@@ -132,7 +132,8 @@ async def dmp_search(message: types.Message):
                              f'{query[2]}',
                         reply_markup=keyboards.back)
                 else:
-                    await message.answer(text='Информация о ДМП в этой ТТ не '
+                    await message.answer(text='❗ Информация о ДМП в этой ТТ '
+                                              'не '
                                               'найдена!',
                                          reply_markup=keyboards.back)
             else:
@@ -145,7 +146,8 @@ async def dmp_search(message: types.Message):
             logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
 
     else:
-        await message.answer(text='Номер ТТ не соответствует формату ввода!\n'
+        await message.answer(text='❗ Номер ТТ не соответствует формату '
+                                  'ввода!\n'
                                   'Введите еще раз!',
                              reply_markup=keyboards.back)
 

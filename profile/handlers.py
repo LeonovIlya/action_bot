@@ -33,7 +33,7 @@ async def my_profile(message: types.Message):
                                           f'<b>Ваш CM:</b> {data[7]}\n'
                                           f'<b>Территория:</b> {data[1]}\n'
                                           f'<b>Регион:</b> {data[2]}\n'
-                                          f'<b>Должность:</b> {POSITION[data[3]]}\n '
+                                          f'<b>Должность:</b> {POSITION[data[3]]}\n'
                                           f'<b>Уровень:</b> {data[4]}\n'
                                           f'<b>Баллы:</b> {data[5]}\n',
                                      reply_markup=keyboards.back)
@@ -76,8 +76,8 @@ async def hr_documents(message: types.Message):
 
 
 async def comments(message: types.Message):
-    await message.answer(text='Здесь вы можете оставить оставить свой отзыв '
-                              'об удовлетворённости работой.\n'
+    await message.answer(text='Здесь вы можете отправить СитиМенеджеру свой '
+                              'отзыв об удовлетворённости работой.\n'
                               'Также можете оценить работу данного бота.',
                          reply_markup=keyboards.back)
     await UserState.profile_comments.set()
