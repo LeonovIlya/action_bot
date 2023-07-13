@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
     KeyboardButton, ReplyKeyboardMarkup
 
-# стартовое меню для мерчендайзеров
+# стартовое меню для мерчендайзеров и KAS
 start_menu_mr = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Инструменты🛠'), KeyboardButton(text='KPI📈')],
     [KeyboardButton(text='Рейтинги📊'), KeyboardButton(text='Практики🗣')],
@@ -9,13 +9,7 @@ start_menu_mr = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Магазин🏦')]],
     resize_keyboard=True,
     one_time_keyboard=True)
-# стартовое меню для KAS
-start_menu_kas = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='Инструменты🛠'), KeyboardButton(text='KPI📈')],
-    [KeyboardButton(text='МП🤩'), KeyboardButton(text='Практики🗣')],
-    [KeyboardButton(text='Магазин🏦'), KeyboardButton(text='Кабинет🗄')]],
-    resize_keyboard=True,
-    one_time_keyboard=True)
+
 
 # стартовое меню для CitiManager
 start_menu_cm = ReplyKeyboardMarkup(keyboard=[
@@ -142,6 +136,19 @@ manage_keyboard.add(
 manage_keyboard.add(
     InlineKeyboardButton('Удалить практику',
                          callback_data='delete_bp'))
+
+accept_keyboard = InlineKeyboardMarkup()
+accept_keyboard.insert(
+    InlineKeyboardButton('Принять✅',
+                         callback_data='Accept'))
+accept_keyboard.insert(
+    InlineKeyboardButton('Отклонить❌',
+                         callback_data='Decline'))
+
+next_keyboard = InlineKeyboardMarkup()
+next_keyboard.insert(
+    InlineKeyboardButton('Дальше➡',
+                         callback_data='Next'))
 
 
 # формируем инлайн клавиатуру

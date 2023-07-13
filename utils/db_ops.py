@@ -18,7 +18,7 @@ class BotDB:
         async with asq.connect(self._db_file) as conn:
             await conn.executescript(TABLES)
             await conn.commit()
-            logging.info('tables created')
+            logging.info('Tables created!')
             return None
 
     async def close(self) -> None:
@@ -36,8 +36,7 @@ class BotDB:
         else:
             values = ''
         async with self.connection.execute(query, values) as cursor:
-            result = await cursor.fetchone()
-            return result
+            return await cursor.fetchone()
 
     async def get_all(self, query: str, **kwargs):
         if self.connection is None:
@@ -49,8 +48,7 @@ class BotDB:
         else:
             values = ''
         async with self.connection.execute(query, values) as cursor:
-            result = await cursor.fetchall()
-            return result
+            return await cursor.fetchall()
 
     async def post(self, query: str, **kwargs):
         if self.connection is None:

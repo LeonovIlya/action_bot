@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-
+import config
 from loader import dp, db, bot, scheduler
 from best_practice.handlers import register_handlers_best_practice
 from kpi.handlers import register_handlers_kpi
@@ -11,7 +11,7 @@ from ratings.handlers import register_handlers_ratings
 from shop.handlers import register_handlers_shop
 from tools.handlers import register_handlers_tools
 from users.handlers import register_handlers_users
-from utils.jobs import check_bp_start, check_bp_stop
+from utils.jobs import check_bp_start, check_bp_stop, check_redis, clear_logs
 
 logger = logging.getLogger('bot')
 logging.getLogger('apscheduler.executors.default').propagate = False
@@ -19,21 +19,25 @@ logging.getLogger('apscheduler.executors.default').propagate = False
 
 def set_scheduled_jobs():
     scheduler.add_job(func=check_bp_stop,
-                      trigger='cron',
-                      hour=0,
-                      minute=1,
-                      timezone='Europe/Moscow',
+                      trigger='interval',
+                      hours=1,
                       args=(dp,))
     scheduler.add_job(func=check_bp_start,
-                      trigger='cron',
-                      hour=0,
-                      minute=2,
-                      timezone='Europe/Moscow',
+                      trigger='interval',
+                      hours=1,
+                      args=(dp,))
+    scheduler.add_job(func=check_redis,
+                      trigger='interval',
+                      minutes=1,
+                      args=(dp,))
+    scheduler.add_job(func=clear_logs,
+                      trigger='interval',
+                      days=30,
                       args=(dp,))
 
 
 async def start():
-    logging.basicConfig(filename='bot_log.log',
+    logging.basicConfig(filename=config.LOG_FILE,
                         encoding='UTF-8',
                         filemode='a',
                         level=logging.INFO,
@@ -58,7 +62,6 @@ async def start():
         scheduler.start()
         await dp.start_polling(bot)
     finally:
-        print('stop')
         await db.close()
         await dp.storage.close()
         await dp.storage.wait_closed()
