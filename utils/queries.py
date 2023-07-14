@@ -3,8 +3,6 @@ NAME_QUERY = "SELECT DISTINCT name FROM planograms"
 BP_NAME = "SELECT name, desc, datetime_start, datetime_stop, file_link FROM " \
           "best_practice"
 
-MAX_ID = "SELECT MAX(id) FROM best_practice"
-
 INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (best_practice, username, "\
                      "kas, tg_id, datetime_added, desc, file_link, " \
                      "kas_checked, kas_approved, cm_checked, cm_approved," \
@@ -15,9 +13,6 @@ INSERT_PRACTICE = "INSERT INTO best_practice (region, name, desc, " \
                   "user_added, datetime_added, datetime_start, datetime_stop,"\
                   " is_active, over, file_link) " \
                   "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-
-UPDATE_TG_ID = "UPDATE users SET tg_id = ? WHERE ter_num = ?"
-LOGOUT = "UPDATE users SET tg_id = NULL WHERE tg_id = ?"
 
 KP_MR_QUERY = "SELECT plan_pss, fact_pss, [%_pss], plan_osa, fact_osa, " \
               "[%_osa], plan_tt, fact_tt, [%_tt], plan_visits, fact_visits," \
@@ -62,10 +57,8 @@ async def ratings_query_all(column_name: str, position: str) -> str:
            f"COUNT() OVER () AS cnt FROM users WHERE position = '{position}')"
 
 
-async def ratings_query(column_name: str,
-                        position: str,
-                        where_name: str,
-                        where_value: str) -> str:
+async def ratings_query(column_name: str, position: str,
+                        where_name: str, where_value: str) -> str:
     return f"SELECT rn, cnt FROM(SELECT tg_id, ROW_NUMBER() OVER" \
            f"(ORDER BY {column_name} DESC NULLS LAST) AS rn," \
            f" COUNT() OVER () AS cnt" \

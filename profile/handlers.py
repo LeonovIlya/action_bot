@@ -121,8 +121,13 @@ async def send_comments(message: types.Message):
 
 async def profile_logout(message: types.Message, state: FSMContext):
     try:
-        await db.post(queries.LOGOUT,
-                      tg_id=message.from_user.id)
+        await db.post(
+            await queries.update(
+                table='users',
+                column_name='tg_id',
+                where_name='tg_id'),
+            value='NULL',
+            tg_id=int(message.from_user.id))
         await message.answer(
             text='Вы успешно разлогинились!',
             reply_markup=keyboards.start)

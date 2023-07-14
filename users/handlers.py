@@ -114,7 +114,10 @@ async def password_check(message: types.Message, state: FSMContext):
             password=pwd_hash)
         if check_password:
             await db.post(
-                queries.UPDATE_TG_ID,
+                await queries.update(
+                    table='users',
+                    column_name='tg_id',
+                    where_name='ter_num'),
                 tg_id=int(message.from_user.id),
                 ter_num=str(data['ter_num']))
             await message.answer(text='Добро пожаловать!')

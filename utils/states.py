@@ -28,6 +28,8 @@ class UserState(StatesGroup):
     kpi_menu = State()
     kpi_search_tt = State()
 
+    mp_menu = State()
+
     practice_menu_mr = State()
     practice_menu_kas = State()
     practice_menu_cm = State()

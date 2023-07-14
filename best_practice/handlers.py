@@ -528,7 +528,10 @@ async def add_new_practice(message: types.Message, state: FSMContext):
             value='username',
             table='users',
             tg_id=int(message.from_user.id))
-        max_id = await db.get_one(queries.MAX_ID)
+        max_id = await db.get_one(
+            await queries.get_value(
+                value='MAX(id)',
+                table='best_practice'))
         if max_id[0] is None:
             max_id = ('0',)
         data = await state.get_data()

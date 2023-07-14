@@ -10,7 +10,6 @@ start_menu_mr = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-
 # стартовое меню для CitiManager
 start_menu_cm = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Инструменты🛠'), KeyboardButton(text='KPI📈')],
@@ -19,7 +18,7 @@ start_menu_cm = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-
+# меню инструменты
 tools_menu = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Планограммы🧮'), KeyboardButton(text='ДМП📦')],
     [KeyboardButton(text='Промо🎁'), KeyboardButton(text='Картина Успеха🎉')],
@@ -27,7 +26,7 @@ tools_menu = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-
+# меню kpi
 kpi_menu = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Мой KPI📈'), KeyboardButton(text='KPI TT🏬')],
     [KeyboardButton(text='Информация по бонусу💰')],
@@ -35,7 +34,7 @@ kpi_menu = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-
+# меню рейтингов для мерчендайзера и каса
 ratings_menu_mr = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Мои рейтинги📊'),
      KeyboardButton(text='Результаты тестов📋')],
@@ -43,7 +42,7 @@ ratings_menu_mr = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-
+# меню практик для мерчендайзера
 practice_menu_mr = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Текущие практики🎯')],
     [KeyboardButton(text='Предложения📝')],
@@ -52,6 +51,7 @@ practice_menu_mr = ReplyKeyboardMarkup(keyboard=[
     one_time_keyboard=True
 )
 
+# меню практик для каса
 practice_menu_kas = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Смотреть заявки📬')],
     [KeyboardButton(text='Предложения📝')],
@@ -60,6 +60,7 @@ practice_menu_kas = ReplyKeyboardMarkup(keyboard=[
     one_time_keyboard=True
 )
 
+# меню практик для ситименеджера
 practice_menu_cm = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Управлять текущими🔀')],
     [KeyboardButton(text='Смотреть заявки📬')],
@@ -70,6 +71,16 @@ practice_menu_cm = ReplyKeyboardMarkup(keyboard=[
     one_time_keyboard=True
 )
 
+# меню мотивационных программ
+mp_menu = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Текущие МП💸')],
+    [KeyboardButton(text='Архив МП🗃')],
+    [KeyboardButton(text='Главное меню📱')]],
+    resize_keyboard=True,
+    one_time_keyboard=True
+)
+
+# меню профиля
 profile_menu = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Мой профиль🗂'),
      KeyboardButton(text='Карьерный рост🔝')],
@@ -81,6 +92,7 @@ profile_menu = ReplyKeyboardMarkup(keyboard=[
     one_time_keyboard=True
 )
 
+# меню профиля ситименеджера
 profile_menu_cm = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Мой профиль🗂'),
      KeyboardButton(text='Карьерный рост🔝')],
@@ -91,6 +103,7 @@ profile_menu_cm = ReplyKeyboardMarkup(keyboard=[
     one_time_keyboard=True
 )
 
+# стартовая кнопка
 start = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text='START▶️')]],
     resize_keyboard=True,
@@ -102,12 +115,13 @@ back = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=True)
 
+# универсальная кнопка главное меню
 main_menu = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True)
 
-
+# инлайн клавиатура да/нет
 confirm_keyboard = InlineKeyboardMarkup()
 confirm_keyboard.insert(
     InlineKeyboardButton('Да',
@@ -116,7 +130,7 @@ confirm_keyboard.insert(
     InlineKeyboardButton('Нет',
                          callback_data='bp_no'))
 
-
+# инлайн клавиатура редактирования лучших практик
 manage_keyboard = InlineKeyboardMarkup()
 manage_keyboard.add(
     InlineKeyboardButton('Изменить название',
@@ -137,6 +151,7 @@ manage_keyboard.add(
     InlineKeyboardButton('Удалить практику',
                          callback_data='delete_bp'))
 
+# инлайн клавиатура модерации
 accept_keyboard = InlineKeyboardMarkup()
 accept_keyboard.insert(
     InlineKeyboardButton('Принять✅',
@@ -145,14 +160,9 @@ accept_keyboard.insert(
     InlineKeyboardButton('Отклонить❌',
                          callback_data='Decline'))
 
-next_keyboard = InlineKeyboardMarkup()
-next_keyboard.insert(
-    InlineKeyboardButton('Дальше➡',
-                         callback_data='Next'))
 
-
-# формируем инлайн клавиатуру
-async def get_inline_buttons(data):
+# формируем инлайн клавиатуру из кортежа
+async def get_inline_buttons(data: tuple) -> InlineKeyboardMarkup:
     get_inline_keyboard = InlineKeyboardMarkup()
     for i in data:
         get_inline_keyboard.insert(
