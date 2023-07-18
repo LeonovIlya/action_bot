@@ -13,6 +13,7 @@ DB_PORT = os.getenv('DB_PORT')
 DB_NAME = os.getenv('DB_NAME')
 
 REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 
 CHANNEL_ID = os.getenv('CHANNEL_ID')
 ADMIN_ID = os.getenv('ADMIN_ID')

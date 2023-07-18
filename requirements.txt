@@ -1,6 +1,5 @@
 aiogram==2.25.1
 aiosqlite
-aiofile
 aiofiles
 aiopath
 APScheduler

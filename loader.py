@@ -7,7 +7,9 @@ from utils.db_ops import BotDB
 
 bot = Bot(token=config.BOT_TOKEN, parse_mode=types.ParseMode.HTML)
 
-storage = RedisStorage2()
+storage = RedisStorage2(
+    host=config.REDIS_HOST,
+    password=config.REDIS_PASSWORD)
 
 dp = Dispatcher(bot, storage=storage)
 db = BotDB('data.db')
