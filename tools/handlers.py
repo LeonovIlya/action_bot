@@ -16,6 +16,8 @@ from utils.states import UserState
 
 CLUSTERS = ('0', '2',)
 SHOPS = ('Верный', 'Дикси', 'Лента', 'Магнит', 'Перекресток', 'Пятерочка')
+SHOPS_PROMO = ('Атак', 'Ашан', 'Верный', 'ГиперГлобус', 'Дикси', 'Лента',
+         'Магнит', 'Метро', 'Окей', 'Перекресток', 'Пятерочка')
 MAGNITS = ('Магнит ГМ', 'Магнит МК', 'Магнит ММ')
 
 R_STR = r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,' \
@@ -84,7 +86,6 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
 
 # формируем запрос к бд, получаем ответ
 async def name_choice(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.delete()
     try:
         name = callback.data
         data = await state.get_data()
@@ -101,6 +102,7 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
                 text='Отправляю файл...',
                 show_alert=False)
             await asyncio.sleep(0.5)
+            await callback.message.delete()
             async with aiofiles.open(str(file_link[0]), 'rb') as file:
                 await callback.message.answer_chat_action(
                     action='upload_document')
@@ -171,7 +173,7 @@ async def dmp_search(message: types.Message):
 
 
 async def promo_action(message: types.Message):
-    keyboard = await keyboards.get_inline_buttons(SHOPS)
+    keyboard = await keyboards.get_inline_buttons(SHOPS_PROMO)
     await message.answer(
         text='Выберите торговую сеть:',
         reply_markup=keyboard)
@@ -200,9 +202,9 @@ async def get_promo_action(callback: types.CallbackQuery):
                     show_alert=False)
                 await asyncio.sleep(0.5)
                 await callback.message.delete()
-                await callback.message.answer_chat_action(
-                    action='upload_document')
                 async with aiofiles.open(str(file_link[0]), 'rb') as file:
+                    await callback.message.answer_chat_action(
+                        action='upload_document')
                     await callback.message.answer_document(
                         file,
                         reply_markup=keyboards.back)

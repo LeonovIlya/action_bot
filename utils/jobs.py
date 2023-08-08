@@ -116,7 +116,8 @@ async def check_bp_stop(dp: Dispatcher):
 
 
 async def check_redis(dp: Dispatcher):
-    r = redis.Redis(config.REDIS_HOST,
+    r = redis.Redis(host=config.REDIS_HOST,
+                    # password=config.REDIS_PASSWORD,
                     socket_connect_timeout=1)
     try:
         r.ping()

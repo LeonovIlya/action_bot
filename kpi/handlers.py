@@ -12,6 +12,8 @@ from utils.states import UserState
 R_STR = r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,' \
         r')|(\s№\s)|(\sг,)'
 
+KPI = ['PSS:', 'OSA:', 'TT:', 'VISITS:', 'ISA-OSA:']
+
 
 async def kpi_menu(message: types.Message):
     await message.answer(text='Выберите пункт из меню:',
@@ -25,17 +27,20 @@ async def kpi_mr(message: types.Message):
             queries.KP_MR_QUERY,
             tg_id=int(message.from_user.id))
         await message.answer(
-            text=f'<b>Ваш KPI (план | факт | выполнение):</b>\n'
-                 f'<b><u>PSS:</u></b> '
-                 f'{query[0]:.2%} | {query[1]:.2%} | {query[2]:.2%}\n'
-                 f'<b><u>OSA:</u></b> '
-                 f'{query[3]:.2%} | {query[4]:.2%} | {query[5]:.2%}\n'
-                 f'<b><u>TT:</u></b> '
-                 f'{query[6]} | {query[7]} | {query[8]:.2%}\n'
-                 f'<b><u>Visits:</u></b> '
-                 f'{query[9]} | {query[10]} | {query[11]:.2%}\n'
-                 f'<b><u>ISA-OSA:</u></b> {query[12]}',
-            reply_markup=keyboards.back)
+            text=f'```\n'
+                 f'        план|    факт|результат\n'
+                 f'{KPI[0]:<4}'
+                 f'{query[0]:>8.2%}|{query[1]:>8.2%}|{query[2]:>8.2%}\n'
+                 f'{KPI[1]:<4}'
+                 f'{query[3]:>8.2%}|{query[4]:>8.2%}|{query[5]:>8.2%}\n'
+                 f'{KPI[2]:<4}'
+                 f'{query[6]:>8}|{query[7]:>8}|{query[8]:>8.2%}\n'
+                 f'{KPI[3]:<7}'
+                 f'{query[9]:>5}|{query[10]:>8}|{query[11]:>8.2%}\n'
+                 f'{KPI[4]:<7}{query[12]:>22}\n'
+                 f'```',
+            reply_markup=keyboards.back,
+            parse_mode='MarkdownV2')
     except Exception as error:
         await message.answer(
             text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
@@ -58,23 +63,34 @@ async def kpi_search_tt(message: types.Message):
                 tt_num=tt_num)
             if query:
                 address = re.sub(R_STR, '', query[0])
+                address = address\
+                    .replace("_", "\\_")\
+                    .replace(".", "\\.")\
+                    .replace("-", "\\-")\
+                    .replace("*", "\\*")\
+                    .replace("@", "\\@")\
+                    .replace("&", "\\&")
+                mr = query[2].replace("_", "\\_")
                 await message.answer(
-                    text=f'<b>TT № {tt_num}:</b>\n'
-                         f'<b>Сеть:</b> {query[1]}\n'
-                         f'<b>Адрес:</b> {address}\n'
-                         f'<b>MR:</b> {query[2]}\n'
-                         f'<b>KAS:</b> {query[3]}\n\n'
-                         f'<b>      план | факт | выполнение</b>\n'
-                         f'<b><u>PSS:</u></b> '
-                         f'{query[4]:.2%} | {query[5]:.2%} | {query[6]:.2%}\n'
-                         f'<b><u>OSA:</u></b> '
-                         f'{query[7]:.2%} | {query[8]:.2%} | {query[9]:.2%}\n'
-                         f'<b><u>TT:</u></b> '
-                         f'{query[10]} | {query[11]} | {query[12]:.2%}\n'
-                         f'<b><u>VISITS:</u></b> '
-                         f'{query[13]} | {query[14]} | {query[15]:.2%}\n'
-                         f'<b><u>ISA-OSA:</u></b> {query[16]}',
-                    reply_markup=keyboards.back)
+                    text=f'*TT №* {tt_num}\n'
+                         f'*Сеть:* {query[1]}\n'
+                         f'**Адрес:** {address}\n'
+                         f'*MR:* {mr}\n'
+                         f'*KAS:* {query[3]}\n\n'
+                         f'```\n'
+                         f'        план|    факт|результат\n'
+                         f'{KPI[0]:<4}'
+                         f'{query[4]:>8.2%}|{query[5]:>8.2%}|{query[6]:>8.2%}\n'
+                         f'{KPI[1]:<4}'
+                         f'{query[7]:>8.2%}|{query[8]:>8.2%}|{query[9]:>8.2%}\n'
+                         f'{KPI[2]:<4}'
+                         f'{query[10]:>8}|{query[11]:>8}|{query[12]:>8.2%}\n'
+                         f'{KPI[3]:<7}'
+                         f'{query[13]:>5}|{query[14]:>8}|{query[15]:>8.2%}\n'
+                         f'{KPI[4]:<7}{query[16]:>22}\n'
+                         f'```',
+                    reply_markup=keyboards.back,
+                    parse_mode='MarkdownV2')
             else:
                 await message.answer(
                     text='❗ ТТ с таким номером не найдена!\n'

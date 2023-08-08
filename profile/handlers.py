@@ -122,7 +122,7 @@ async def send_comments(message: types.Message):
 async def profile_logout(message: types.Message, state: FSMContext):
     try:
         await db.post(
-            await queries.update(
+            await queries.update_value(
                 table='users',
                 column_name='tg_id',
                 where_name='tg_id'),

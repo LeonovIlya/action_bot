@@ -2,6 +2,7 @@ import hashlib
 import logging
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
+from typing import Union
 
 
 from loader import db
@@ -9,7 +10,8 @@ from utils import keyboards, queries
 from utils.states import UserState
 
 
-async def get_value_by_tgig(value: str, table: str, tg_id: int) -> str:
+async def get_value_by_tgig(value: str, table: str, tg_id: int)\
+        ->Union[str, bool]:
     result = await db.get_one(
         await queries.get_value(
             value=value,
@@ -17,6 +19,8 @@ async def get_value_by_tgig(value: str, table: str, tg_id: int) -> str:
         ),
         tg_id=tg_id
     )
+    if result is None:
+        return False
     return result[0]
 
 
@@ -114,7 +118,7 @@ async def password_check(message: types.Message, state: FSMContext):
             password=pwd_hash)
         if check_password:
             await db.post(
-                await queries.update(
+                await queries.update_value(
                     table='users',
                     column_name='tg_id',
                     where_name='ter_num'),

@@ -1,5 +1,5 @@
-import asyncio
 import logging
+from aiogram.utils.executor import start_webhook
 
 import config
 from loader import dp, db, bot, scheduler
@@ -12,15 +12,16 @@ from shop.handlers import register_handlers_shop
 from tools.handlers import register_handlers_tools
 from users.handlers import register_handlers_users
 from utils.jobs import check_bp_start, check_bp_stop, check_redis, clear_logs
+from utils.throttling import ThrottlingMiddleware
 
 logger = logging.getLogger('bot')
 logging.getLogger('apscheduler.executors.default').propagate = False
-logging.basicConfig(filename=config.LOG_FILE,
-                    encoding='UTF-8',
-                    filemode='a',
-                    level=logging.INFO,
-                    format="%(asctime)s - %(levelname)s - %(name)s - %("
-                           "message)s")
+
+WEBHOOK_HOST = ''
+WEBHOOK_PATH = ''
+WEBAPP_HOST = '127.0.0.1'
+WEBAPP_PORT = 3001
+WEBHOOK_URL = f'{WEBHOOK_HOST}{WEBHOOK_PATH}'
 
 
 def set_scheduled_jobs():
@@ -42,11 +43,20 @@ def set_scheduled_jobs():
                       args=(dp,))
 
 
-async def start():
-    logger.info("Starting bot")
+def setup_middlewares(dp):
+    dp.middleware.setup(ThrottlingMiddleware())
 
+
+async def on_startup(dp):
+    logging.basicConfig(filename=config.LOG_FILE,
+                        encoding='UTF-8',
+                        filemode='a',
+                        level=logging.DEBUG,
+                        format='%(asctime)s - %(levelname)s - %(name)s - %('
+                               'message)s')
+    logger.info('Starting bot...')
+    await bot.set_webhook(WEBHOOK_URL)
     await db.create_connection()
-
     register_handlers_users(dp)
     register_handlers_best_practice(dp)
     register_handlers_kpi(dp)
@@ -55,24 +65,27 @@ async def start():
     register_handlers_ratings(dp)
     register_handlers_shop(dp)
     register_handlers_tools(dp)
-
+    setup_middlewares(dp)
     set_scheduled_jobs()
+    scheduler.start()
 
-    try:
-        scheduler.start()
-        await dp.start_polling(bot)
-    finally:
-        await db.close()
-        await dp.storage.close()
-        await dp.storage.wait_closed()
-        await bot.session.close()
+
+async def on_shutdown(dp):
+    logger.info('Stoping bot...')
+    await bot.delete_webhook()
+    await db.close()
+    await dp.storage.close()
+    await dp.storage.wait_closed()
+    await bot.session.close()
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(start())
-    except KeyboardInterrupt:
-        logger.info("Bot stopped by keyboard")
-    finally:
-        loop.close()
+    start_webhook(
+        dispatcher=dp,
+        webhook_path=WEBHOOK_PATH,
+        on_startup=on_startup,
+        on_shutdown=on_shutdown,
+        skip_updates=True,
+        host=WEBAPP_HOST,
+        port=WEBAPP_PORT,
+    )
