@@ -3,6 +3,10 @@ NAME_QUERY = "SELECT DISTINCT name FROM planograms"
 BP_NAME = "SELECT name, desc, datetime_start, datetime_stop, file_link FROM " \
           "best_practice"
 
+INSERT_USER = "INSERT INTO users (username, ter_num, password, region, "\
+              "position, grade, kas, citimanager) " \
+              "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+
 INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (best_practice, username, "\
                      "kas, tg_id, datetime_added, desc, file_link, " \
                      "kas_checked, kas_approved, cm_checked, cm_approved," \

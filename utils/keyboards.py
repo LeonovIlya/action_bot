@@ -1,6 +1,22 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
     KeyboardButton, ReplyKeyboardMarkup
 
+
+# стартовое меню для админ-функций
+admin_menu = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Manage Users')],
+    [KeyboardButton(text='Главное меню📱')]],
+    resize_keyboard=True,
+    one_time_keyboard=True)
+
+# меню управления пользователями
+manage_user_menu = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Add user'), KeyboardButton(text='Edit user')],
+    [KeyboardButton(text='Show user info')]],
+    resize_keyboard=True,
+    one_time_keyboard=True)
+
+
 # стартовое меню для мерчендайзеров и KAS
 start_menu_mr = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Инструменты🛠'), KeyboardButton(text='KPI📈')],
@@ -162,7 +178,7 @@ accept_keyboard.insert(
 
 
 # формируем инлайн клавиатуру из кортежа
-async def get_inline_buttons(data: tuple) -> InlineKeyboardMarkup:
+async def get_inline_buttons(data: tuple | list) -> InlineKeyboardMarkup:
     get_inline_keyboard = InlineKeyboardMarkup()
     for i in data:
         get_inline_keyboard.insert(

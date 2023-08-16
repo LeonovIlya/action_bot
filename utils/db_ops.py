@@ -50,10 +50,14 @@ class BotDB:
         async with self.connection.execute(query, values) as cursor:
             return await cursor.fetchall()
 
-    async def post(self, query: str, **kwargs):
+    async def post(self, query: str, *args, **kwargs):
         if self.connection is None:
             await self.create_connection()
-        values = list(kwargs.values())
-        await self.connection.execute(query, values)
+        if args:
+            values = list(args)
+            await self.connection.execute(query, values)
+        if kwargs:
+            values = list(kwargs.values())
+            await self.connection.execute(query, values)
         await self.connection.commit()
-        logging.info(f'NEW INSERT:\nQUERY: {query}\nVALUES: {values}')
+        logging.info('NEW INSERT:\nQUERY: %s \nVALUES: %s', query, values)

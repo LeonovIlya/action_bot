@@ -3,6 +3,7 @@ import logging
 
 import config
 from loader import dp, db, bot, scheduler
+from admin_manager.handler import register_handlers_admin_manager
 from best_practice.handlers import register_handlers_best_practice
 from kpi.handlers import register_handlers_kpi
 from motivation.handlers import register_handlers_motivation
@@ -47,6 +48,7 @@ async def start():
 
     await db.create_connection()
 
+    register_handlers_admin_manager(dp)
     register_handlers_users(dp)
     register_handlers_best_practice(dp)
     register_handlers_kpi(dp)

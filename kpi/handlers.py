@@ -4,15 +4,16 @@ import aiofiles
 
 from aiopath import AsyncPath
 from aiogram import Dispatcher, types
+from aiogram.dispatcher import FSMContext
 
 from loader import db
-from utils import keyboards, queries
+from utils import decorators, keyboards, queries
 from utils.states import UserState
 
 R_STR = r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,' \
         r')|(\s№\s)|(\sг,)'
 
-KPI = ['PSS:', 'OSA:', 'TT:', 'VISITS:', 'ISA-OSA:']
+KPI = ('PSS:', 'OSA:', 'TT:', 'VISITS:', 'ISA-OSA:')
 
 
 async def kpi_menu(message: types.Message):
@@ -21,30 +22,26 @@ async def kpi_menu(message: types.Message):
     await UserState.kpi_menu.set()
 
 
-async def kpi_mr(message: types.Message):
-    try:
-        query = await db.get_one(
-            queries.KP_MR_QUERY,
-            tg_id=int(message.from_user.id))
-        await message.answer(
-            text=f'```\n'
-                 f'        план|    факт|результат\n'
-                 f'{KPI[0]:<4}'
-                 f'{query[0]:>8.2%}|{query[1]:>8.2%}|{query[2]:>8.2%}\n'
-                 f'{KPI[1]:<4}'
-                 f'{query[3]:>8.2%}|{query[4]:>8.2%}|{query[5]:>8.2%}\n'
-                 f'{KPI[2]:<4}'
-                 f'{query[6]:>8}|{query[7]:>8}|{query[8]:>8.2%}\n'
-                 f'{KPI[3]:<7}'
-                 f'{query[9]:>5}|{query[10]:>8}|{query[11]:>8.2%}\n'
-                 f'{KPI[4]:<7}{query[12]:>22}\n'
-                 f'```',
-            reply_markup=keyboards.back,
-            parse_mode='MarkdownV2')
-    except Exception as error:
-        await message.answer(
-            text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
-        logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
+@decorators.error_handler_message
+async def kpi_mr(message: types.Message, state: FSMContext):
+    query = await db.get_one(
+        queries.KP_MR_QUERY,
+        tg_id=int(message.from_user.id))
+    await message.answer(
+        text=f'```\n'
+             f'        план|    факт|результат\n'
+             f'{KPI[0]:<4}'
+             f'{query[0]:>8.2%}|{query[1]:>8.2%}|{query[2]:>8.2%}\n'
+             f'{KPI[1]:<4}'
+             f'{query[3]:>8.2%}|{query[4]:>8.2%}|{query[5]:>8.2%}\n'
+             f'{KPI[2]:<4}'
+             f'{query[6]:>8}|{query[7]:>8}|{query[8]:>8.2%}\n'
+             f'{KPI[3]:<7}'
+             f'{query[9]:>5}|{query[10]:>8}|{query[11]:>8.2%}\n'
+             f'{KPI[4]:<7}{query[12]:>22}\n'
+             f'```',
+        reply_markup=keyboards.back,
+        parse_mode='MarkdownV2')
 
 
 async def kpi_tt(message: types.Message):
@@ -54,53 +51,48 @@ async def kpi_tt(message: types.Message):
     await UserState.kpi_search_tt.set()
 
 
-async def kpi_search_tt(message: types.Message):
+@decorators.error_handler_message
+async def kpi_search_tt(message: types.Message, state: FSMContext):
     tt_num = re.sub(r'\s', '', str(message.text))
     if re.match(r'\d{7}', tt_num) and len(tt_num) == 7:
-        try:
-            query = await db.get_one(
-                queries.KPI_TT_QUERY,
-                tt_num=tt_num)
-            if query:
-                address = re.sub(R_STR, '', query[0])
-                address = address\
-                    .replace("_", "\\_")\
-                    .replace(".", "\\.")\
-                    .replace("-", "\\-")\
-                    .replace("*", "\\*")\
-                    .replace("@", "\\@")\
-                    .replace("&", "\\&")
-                mr = query[2].replace("_", "\\_")
-                await message.answer(
-                    text=f'*TT №* {tt_num}\n'
-                         f'*Сеть:* {query[1]}\n'
-                         f'**Адрес:** {address}\n'
-                         f'*MR:* {mr}\n'
-                         f'*KAS:* {query[3]}\n\n'
-                         f'```\n'
-                         f'        план|    факт|результат\n'
-                         f'{KPI[0]:<4}'
-                         f'{query[4]:>8.2%}|{query[5]:>8.2%}|{query[6]:>8.2%}\n'
-                         f'{KPI[1]:<4}'
-                         f'{query[7]:>8.2%}|{query[8]:>8.2%}|{query[9]:>8.2%}\n'
-                         f'{KPI[2]:<4}'
-                         f'{query[10]:>8}|{query[11]:>8}|{query[12]:>8.2%}\n'
-                         f'{KPI[3]:<7}'
-                         f'{query[13]:>5}|{query[14]:>8}|{query[15]:>8.2%}\n'
-                         f'{KPI[4]:<7}{query[16]:>22}\n'
-                         f'```',
-                    reply_markup=keyboards.back,
-                    parse_mode='MarkdownV2')
-            else:
-                await message.answer(
-                    text='❗ ТТ с таким номером не найдена!\n'
-                         'Попробуйте еще раз!',
-                    reply_markup=keyboards.back)
-        except Exception as error:
+        query = await db.get_one(
+            queries.KPI_TT_QUERY,
+            tt_num=tt_num)
+        if query:
+            address = re.sub(R_STR, '', query[0])
+            address = address\
+                .replace("_", "\\_")\
+                .replace(".", "\\.")\
+                .replace("-", "\\-")\
+                .replace("*", "\\*")\
+                .replace("@", "\\@")\
+                .replace("&", "\\&")
+            mr = query[2].replace("_", "\\_")
             await message.answer(
-                text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
-            logging.info(
-                f'Error: {error}, user: {int(message.from_user.id)}')
+                text=f'*TT №* {tt_num}\n'
+                     f'*Сеть:* {query[1]}\n'
+                     f'**Адрес:** {address}\n'
+                     f'*MR:* {mr}\n'
+                     f'*KAS:* {query[3]}\n\n'
+                     f'```\n'
+                     f'        план|    факт|результат\n'
+                     f'{KPI[0]:<4}'
+                     f'{query[4]:>8.2%}|{query[5]:>8.2%}|{query[6]:>8.2%}\n'
+                     f'{KPI[1]:<4}'
+                     f'{query[7]:>8.2%}|{query[8]:>8.2%}|{query[9]:>8.2%}\n'
+                     f'{KPI[2]:<4}'
+                     f'{query[10]:>8}|{query[11]:>8}|{query[12]:>8.2%}\n'
+                     f'{KPI[3]:<7}'
+                     f'{query[13]:>5}|{query[14]:>8}|{query[15]:>8.2%}\n'
+                     f'{KPI[4]:<7}{query[16]:>22}\n'
+                     f'```',
+                reply_markup=keyboards.back,
+                parse_mode='MarkdownV2')
+        else:
+            await message.answer(
+                text='❗ ТТ с таким номером не найдена!\n'
+                     'Попробуйте еще раз!',
+                reply_markup=keyboards.back)
 
     else:
         await message.answer(

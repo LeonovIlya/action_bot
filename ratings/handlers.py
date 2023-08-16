@@ -1,9 +1,10 @@
 import logging
 from aiogram import Dispatcher, types
+from aiogram.dispatcher import FSMContext
 
 from loader import db
 from users.handlers import get_value_by_tgig
-from utils import keyboards, queries
+from utils import decorators, keyboards, queries
 from utils.states import UserState
 
 RATINGS_DICT = {'[%_pss]': '% PSS', '[%_osa]': '% OSA', '[%_tt]': '% TT',
@@ -38,77 +39,73 @@ async def ratings_menu(message: types.Message):
     await UserState.ratings_menu_mr.set()
 
 
-async def ratings_mr(message: types.Message):
+@decorators.error_handler_message
+async def ratings_mr(message: types.Message, state: FSMContext):
     tg_id = int(message.from_user.id)
-    try:
-        position = await get_value_by_tgig(
-            value='position',
-            table='users',
-            tg_id=tg_id)
-        match position:
-            case 'mr':
-                for i, k in RATINGS_DICT.items():
-                    result1 = await db.get_one(
-                        await queries.ratings_query_all(
-                            column_name=i,
-                            position=position),
-                        tg_id=tg_id)
-                    result2 = await get_result_rating(
-                        rating_name=i,
-                        position=position,
-                        select_name='region',
-                        tg_id=tg_id)
-                    result3 = await get_result_rating(
-                        rating_name=i,
-                        position=position,
-                        select_name='kas',
-                        tg_id=tg_id)
-                    result4 = await get_result_rating(
-                        rating_name=i,
-                        position=position,
-                        select_name='citimanager',
-                        tg_id=tg_id)
-                    await message.answer(
-                        text=f'<b>Ваше место по {k}:</b>\n'
-                             f'<b>По КАС:</b> '
-                             f'{result3[0]} из {result3[1]}\n'
-                             f'<b>По СитиМенеджеру:</b> '
-                             f'{result4[0]} из {result4[1]}\n'
-                             f'<b>По региону:</b> '
-                             f'{result2[0]} из {result2[1]}\n'
-                             f'<b>По стране:</b> '
-                             f'{result1[0]} из {result1[1]}\n',
-                        reply_markup=keyboards.back)
-            case 'kas':
-                for i, k in RATINGS_DICT.items():
-                    result1 = await db.get_one(
-                        await queries.ratings_query_all(
-                            column_name=i,
-                            position=position),
-                        tg_id=tg_id)
-                    result2 = await get_result_rating(
-                        rating_name=i,
-                        position=position,
-                        select_name='region',
-                        tg_id=tg_id)
-                    result4 = await get_result_rating(
-                        rating_name=i,
-                        position=position,
-                        select_name='citimanager',
-                        tg_id=tg_id)
-                    await message.answer(
-                        text=f'<b>Ваше место по {k}:</b>\n'
-                             f'<b>По СитиМенеджеру:</b> '
-                             f'{result4[0]} из {result4[1]}\n'
-                             f'<b>По региону:</b> '
-                             f'{result2[0]} из {result2[1]}\n'
-                             f'<b>По стране:</b> '
-                             f'{result1[0]} из {result1[1]}\n',
-                        reply_markup=keyboards.back)
-    except Exception as error:
-        await message.answer(
-            text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
-        logging.info(f'Error: {error}, user: {tg_id}')
+    position = await get_value_by_tgig(
+        value='position',
+        table='users',
+        tg_id=tg_id)
+    match position:
+        case 'mr':
+            for i, k in RATINGS_DICT.items():
+                result1 = await db.get_one(
+                    await queries.ratings_query_all(
+                        column_name=i,
+                        position=position),
+                    tg_id=tg_id)
+                result2 = await get_result_rating(
+                    rating_name=i,
+                    position=position,
+                    select_name='region',
+                    tg_id=tg_id)
+                result3 = await get_result_rating(
+                    rating_name=i,
+                    position=position,
+                    select_name='kas',
+                    tg_id=tg_id)
+                result4 = await get_result_rating(
+                    rating_name=i,
+                    position=position,
+                    select_name='citimanager',
+                    tg_id=tg_id)
+                await message.answer(
+                    text=f'<b>Ваше место по {k}:</b>\n'
+                         f'<b>По КАС:</b> '
+                         f'{result3[0]} из {result3[1]}\n'
+                         f'<b>По СитиМенеджеру:</b> '
+                         f'{result4[0]} из {result4[1]}\n'
+                         f'<b>По региону:</b> '
+                         f'{result2[0]} из {result2[1]}\n'
+                         f'<b>По стране:</b> '
+                         f'{result1[0]} из {result1[1]}\n',
+                    reply_markup=keyboards.back)
+        case 'kas':
+            for i, k in RATINGS_DICT.items():
+                result1 = await db.get_one(
+                    await queries.ratings_query_all(
+                        column_name=i,
+                        position=position),
+                    tg_id=tg_id)
+                result2 = await get_result_rating(
+                    rating_name=i,
+                    position=position,
+                    select_name='region',
+                    tg_id=tg_id)
+                result4 = await get_result_rating(
+                    rating_name=i,
+                    position=position,
+                    select_name='citimanager',
+                    tg_id=tg_id)
+                await message.answer(
+                    text=f'<b>Ваше место по {k}:</b>\n'
+                         f'<b>По СитиМенеджеру:</b> '
+                         f'{result4[0]} из {result4[1]}\n'
+                         f'<b>По региону:</b> '
+                         f'{result2[0]} из {result2[1]}\n'
+                         f'<b>По стране:</b> '
+                         f'{result1[0]} из {result1[1]}\n',
+                    reply_markup=keyboards.back)
 
 
 async def tests_results_mr(message: types.Message):

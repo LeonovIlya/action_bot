@@ -11,13 +11,13 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from loader import db
-from utils import keyboards, queries
+from utils import decorators, keyboards, queries
 from utils.states import UserState
 
 CLUSTERS = ('0', '2',)
 SHOPS = ('Верный', 'Дикси', 'Лента', 'Магнит', 'Перекресток', 'Пятерочка')
 SHOPS_PROMO = ('Атак', 'Ашан', 'Верный', 'ГиперГлобус', 'Дикси', 'Лента',
-         'Магнит', 'Метро', 'Окей', 'Перекресток', 'Пятерочка')
+               'Магнит', 'Метро', 'Окей', 'Перекресток', 'Пятерочка')
 MAGNITS = ('Магнит ГМ', 'Магнит МК', 'Магнит ММ')
 
 R_STR = r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,' \
@@ -54,6 +54,7 @@ async def cluster_choice(callback: types.CallbackQuery, state: FSMContext):
     await UserState.tools_plan_shop.set()
 
 
+@decorators.error_handler_callback
 # выбираем формат магазина
 async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
     await callback.bot.answer_callback_query(callback.id)
@@ -65,37 +66,121 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
             text='Выберите формат Магнита:',
             reply_markup=keyboard)
     else:
-        try:
-            data = await db.get_all(
-                queries.NAME_QUERY,
-                shop_name=str(callback.data))
-            data = [i[0] for i in data]
-            keyboard = await keyboards.get_inline_buttons(data)
-            await callback.bot.edit_message_text(
-                chat_id=callback.from_user.id,
-                message_id=callback.message.message_id,
-                text='Выберите планограмму:',
-                reply_markup=keyboard)
-            await state.update_data(shop_name=callback.data)
-            await UserState.tools_plan_name.set()
-        except Exception as error:
-            await callback.message.answer(
-                text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
-            logging.info(f'Error: {error}, user: {int(callback.from_user.id)}')
+        data = await db.get_all(
+            queries.NAME_QUERY,
+            shop_name=str(callback.data))
+        data = [i[0] for i in data]
+        keyboard = await keyboards.get_inline_buttons(data)
+        await callback.bot.edit_message_text(
+            chat_id=callback.from_user.id,
+            message_id=callback.message.message_id,
+            text='Выберите планограмму:',
+            reply_markup=keyboard)
+        await state.update_data(shop_name=callback.data)
+        await UserState.tools_plan_name.set()
 
 
+@decorators.error_handler_callback
 # формируем запрос к бд, получаем ответ
 async def name_choice(callback: types.CallbackQuery, state: FSMContext):
-    try:
-        name = callback.data
-        data = await state.get_data()
+    name = callback.data
+    data = await state.get_data()
+    file_link = await db.get_one(
+        await queries.get_value(
+            value='file_link',
+            table='planograms'),
+        name=name,
+        shop_name=data['shop_name'],
+        cluster=data['cluster'])
+    file = AsyncPath(str(file_link[0]))
+    if await file.is_file():
+        await callback.answer(
+            text='Отправляю файл...',
+            show_alert=False)
+        await asyncio.sleep(0.5)
+        await callback.message.delete()
+        async with aiofiles.open(str(file_link[0]), 'rb') as file:
+            await callback.message.answer_chat_action(
+                action='upload_document')
+            await callback.message.answer_document(
+                file,
+                reply_markup=keyboards.back)
+    else:
+        await callback.message.answer(
+            text='Файл не найден!',
+            reply_markup=keyboards.back)
+
+
+async def dmp_get(message: types.Message):
+    await message.answer(
+        text='Введите 7-и значный номер ТТ:',
+        reply_markup=keyboards.back)
+    await UserState.tools_dmp_search.set()
+
+
+@decorators.error_handler_message
+async def dmp_search(message: types.Message, state: FSMContext):
+    tt_num = re.sub(r'\s', '', str(message.text))
+    if re.match(r'\d{7}', tt_num) and len(tt_num) == 7:
+        query = await db.get_one(
+            queries.DMP_TT_QUERY,
+            tt_num=tt_num)
+        if query:
+            address = re.sub(R_STR, '', query[1])
+            if query[2] or query[3] or query[4]:
+                await message.answer(
+                    text=f'<b>TT № {tt_num}:</b>\n'
+                         f'<b>Сеть:</b> {query[0]}\n'
+                         f'<b>Адрес:</b> {address}\n\n'
+                         f'<u>Оборудование:</u>\n'
+                         f'{query[2]}\n'
+                         f'<u>Выполнение:</u>\n'
+                         f'{query[3]:.2%}\n'
+                         f'<u>Комментарии:</u>\n'
+                         f'{query[4]}',
+                    reply_markup=keyboards.back)
+            else:
+                await message.answer(
+                    text=f'<b>TT № {tt_num}:</b>\n'
+                         f'<b>Сеть:</b> {query[0]}\n'
+                         f'<b>Адрес:</b> {address}\n\n'
+                         f'❗ Информация о ДМП в этой ТТ не найдена!',
+                    reply_markup=keyboards.back)
+        else:
+            await message.answer(
+                text='❗ ТТ с таким номером не найдена!\n'
+                     'Попробуйте еще раз!',
+                reply_markup=keyboards.back)
+    else:
+        await message.answer(
+            text='❗ Номер ТТ не соответствует формату ввода!\n'
+                 'Введите еще раз!',
+            reply_markup=keyboards.back)
+
+
+async def promo_action(message: types.Message):
+    keyboard = await keyboards.get_inline_buttons(SHOPS_PROMO)
+    await message.answer(
+        text='Выберите торговую сеть:',
+        reply_markup=keyboard)
+    await UserState.tools_promo.set()
+
+
+@decorators.error_handler_callback
+async def get_promo_action(callback: types.CallbackQuery, state: FSMContext):
+    if callback.data == 'Магнит':
+        keyboard = await keyboards.get_inline_buttons(MAGNITS)
+        await callback.bot.edit_message_text(
+            chat_id=callback.from_user.id,
+            message_id=callback.message.message_id,
+            text='Выберите формат Магнита:',
+            reply_markup=keyboard)
+    else:
         file_link = await db.get_one(
             await queries.get_value(
                 value='file_link',
-                table='planograms'),
-            name=name,
-            shop_name=data['shop_name'],
-            cluster=data['cluster'])
+                table='promo'),
+            shop_name=str(callback.data))
         file = AsyncPath(str(file_link[0]))
         if await file.is_file():
             await callback.answer(
@@ -113,110 +198,6 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
             await callback.message.answer(
                 text='Файл не найден!',
                 reply_markup=keyboards.back)
-    except Exception as error:
-        await callback.message.answer(
-            text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!',
-            reply_markup=keyboards.back)
-        logging.info(f'Error: {error}, user: {int(callback.from_user.id)}')
-
-
-async def dmp_get(message: types.Message):
-    await message.answer(
-        text='Введите 7-и значный номер ТТ:',
-        reply_markup=keyboards.back)
-    await UserState.tools_dmp_search.set()
-
-
-async def dmp_search(message: types.Message):
-    tt_num = re.sub(r'\s', '', str(message.text))
-    if re.match(r'\d{7}', tt_num) and len(tt_num) == 7:
-        try:
-            query = await db.get_one(
-                queries.DMP_TT_QUERY,
-                tt_num=tt_num)
-            if query:
-                address = re.sub(R_STR, '', query[1])
-                if query[2] or query[3] or query[4]:
-                    await message.answer(
-                        text=f'<b>TT № {tt_num}:</b>\n'
-                             f'<b>Сеть:</b> {query[0]}\n'
-                             f'<b>Адрес:</b> {address}\n\n'
-                             f'<u>Оборудование:</u>\n'
-                             f'{query[2]}\n'
-                             f'<u>Выполнение:</u>\n'
-                             f'{query[3]:.2%}\n'
-                             f'<u>Комментарии:</u>\n'
-                             f'{query[4]}',
-                        reply_markup=keyboards.back)
-                else:
-                    await message.answer(
-                        text=f'<b>TT № {tt_num}:</b>\n'
-                             f'<b>Сеть:</b> {query[0]}\n'
-                             f'<b>Адрес:</b> {address}\n\n'
-                             f'❗ Информация о ДМП в этой ТТ не найдена!',
-                        reply_markup=keyboards.back)
-            else:
-                await message.answer(
-                    text='❗ ТТ с таким номером не найдена!\n'
-                         'Попробуйте еще раз!',
-                    reply_markup=keyboards.back)
-        except Exception as error:
-            await message.answer(
-                text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
-            logging.info(f'Error: {error}, user: {int(message.from_user.id)}')
-
-    else:
-        await message.answer(
-            text='❗ Номер ТТ не соответствует формату ввода!\n'
-                 'Введите еще раз!',
-            reply_markup=keyboards.back)
-
-
-async def promo_action(message: types.Message):
-    keyboard = await keyboards.get_inline_buttons(SHOPS_PROMO)
-    await message.answer(
-        text='Выберите торговую сеть:',
-        reply_markup=keyboard)
-    await UserState.tools_promo.set()
-
-
-async def get_promo_action(callback: types.CallbackQuery):
-    if callback.data == 'Магнит':
-        keyboard = await keyboards.get_inline_buttons(MAGNITS)
-        await callback.bot.edit_message_text(
-            chat_id=callback.from_user.id,
-            message_id=callback.message.message_id,
-            text='Выберите формат Магнита:',
-            reply_markup=keyboard)
-    else:
-        try:
-            file_link = await db.get_one(
-                await queries.get_value(
-                    value='file_link',
-                    table='promo'),
-                shop_name=str(callback.data))
-            file = AsyncPath(str(file_link[0]))
-            if await file.is_file():
-                await callback.answer(
-                    text='Отправляю файл...',
-                    show_alert=False)
-                await asyncio.sleep(0.5)
-                await callback.message.delete()
-                async with aiofiles.open(str(file_link[0]), 'rb') as file:
-                    await callback.message.answer_chat_action(
-                        action='upload_document')
-                    await callback.message.answer_document(
-                        file,
-                        reply_markup=keyboards.back)
-            else:
-                await callback.message.answer(
-                    text='Файл не найден!',
-                    reply_markup=keyboards.back)
-        except Exception as error:
-            await callback.message.answer(
-                text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!',
-                reply_markup=keyboards.back)
-            logging.info(f'Error: {error}, user: {int(callback.from_user.id)}')
 
 
 async def picture_success_select(message: types.Message):
@@ -253,30 +234,26 @@ async def picture_success_get(callback: types.CallbackQuery):
             reply_markup=keyboards.back)
 
 
-async def picture_success_send(callback: types.CallbackQuery):
-    try:
-        file = AsyncPath(f'./files/k_u/{str(callback.data)}')
-        if await file.is_file():
-            await callback.answer(
-                text='Отправляю файл...',
-                show_alert=False)
-            await asyncio.sleep(0.5)
-            await callback.message.delete()
-            await callback.message.answer_chat_action(action='upload_document')
-            async with aiofiles.open(f'./files/k_u/{str(callback.data)}',
-                                     'rb') as file:
-                await callback.message.answer_document(
-                    file,
-                    reply_markup=keyboards.back)
-        else:
-            await callback.message.answer(
-                text='❗ Файл не найден!',
+@decorators.error_handler_callback
+async def picture_success_send(callback: types.CallbackQuery,
+                               state: FSMContext):
+    file = AsyncPath(f'./files/k_u/{str(callback.data)}')
+    if await file.is_file():
+        await callback.answer(
+            text='Отправляю файл...',
+            show_alert=False)
+        await asyncio.sleep(0.5)
+        await callback.message.delete()
+        await callback.message.answer_chat_action(action='upload_document')
+        async with aiofiles.open(f'./files/k_u/{str(callback.data)}',
+                                 'rb') as file:
+            await callback.message.answer_document(
+                file,
                 reply_markup=keyboards.back)
-    except Exception as error:
+    else:
         await callback.message.answer(
-            text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!',
+            text='❗ Файл не найден!',
             reply_markup=keyboards.back)
-        logging.info(f'Error: {error}, user: {int(callback.from_user.id)}')
 
 
 # компануем в обработчик
