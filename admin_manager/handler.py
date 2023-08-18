@@ -1,6 +1,5 @@
 import asyncio
 import hashlib
-import logging
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
@@ -9,7 +8,6 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
 
 import config
 from loader import db
-from users.handlers import get_value_by_tgig
 from utils import decorators, keyboards, queries
 from utils.states import UserState
 

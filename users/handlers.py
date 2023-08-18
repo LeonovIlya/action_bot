@@ -1,5 +1,4 @@
 import hashlib
-import logging
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from typing import Union
@@ -15,12 +14,12 @@ async def get_value_by_tgig(value: str, table: str, tg_id: int)\
     result = await db.get_one(
         await queries.get_value(
             value=value,
-            table=table
-        ),
-        tg_id=tg_id
-    )
+            table=table),
+        tg_id=tg_id)
     if result is None:
         return False
+    if len(result) > 1:
+        return result
     return result[0]
 
 

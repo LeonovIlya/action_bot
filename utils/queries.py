@@ -1,8 +1,5 @@
 NAME_QUERY = "SELECT DISTINCT name FROM planograms"
 
-BP_NAME = "SELECT name, desc, datetime_start, datetime_stop, file_link FROM " \
-          "best_practice"
-
 INSERT_USER = "INSERT INTO users (username, ter_num, password, region, "\
               "position, grade, kas, citimanager) " \
               "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
@@ -18,29 +15,18 @@ INSERT_PRACTICE = "INSERT INTO best_practice (region, name, desc, " \
                   " is_active, over, file_link) " \
                   "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
 
-KP_MR_QUERY = "SELECT plan_pss, fact_pss, [%_pss], plan_osa, fact_osa, " \
-              "[%_osa], plan_tt, fact_tt, [%_tt], plan_visits, fact_visits," \
-              "[%_visits], isa_osa FROM users"
-
-KPI_TT_QUERY = "SELECT address, chain, mr, kas, plan_pss, fact_pss, [%_pss], "\
-               "plan_osa, fact_osa, [%_osa], plan_tt, fact_tt, [%_tt], " \
-               "plan_visits, fact_visits, [%_visits], isa_osa FROM tt"
-DMP_TT_QUERY = "SELECT chain, address, dmp_text, [%_dmp], dmp_comm FROM tt"
-
-BP_PHOTOS = "SELECT id, username, tg_id, desc, file_link from " \
-            "best_practice_mr"
-
 BP_KAS = "UPDATE best_practice_mr SET kas_checked = ?, kas_approved = ? " \
          "WHERE id = ?"
+
 BP_CM = "UPDATE best_practice_mr SET cm_checked = ?, cm_approved = ?, " \
         "active = ? WHERE id = ?"
-
-PROFILE = "SELECT username, ter_num, region, position, grade, points, kas, " \
-          "citimanager FROM users"
 
 DELETE_BP = "DELETE FROM best_practice WHERE name = ?"
 
 DELETE_BP_MR = "DELETE FROM best_practice_mr WHERE id = ?"
+
+CM_TG_ID = "SELECT tg_id FROM users WHERE username = (SELECT citimanager " \
+           "FROM users WHERE tg_id = ?)"
 
 
 async def update_value(table: str, column_name: str, where_name: str) -> str:

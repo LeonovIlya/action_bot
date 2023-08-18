@@ -1,8 +1,10 @@
-import logging
+import aiofiles
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
+from aiopath import AsyncPath
 
 from loader import db
+from users.handlers import get_value_by_tgig
 from utils import decorators, keyboards, queries
 from utils.states import UserState
 
@@ -23,44 +25,56 @@ async def profile_menu_cm(message: types.Message):
 
 @decorators.error_handler_message
 async def my_profile(message: types.Message, state: FSMContext):
-    data = await db.get_one(queries.PROFILE,
-                            tg_id=int(message.from_user.id))
-    match data[3]:
+    data = await get_value_by_tgig(
+        value='*',
+        table='users',
+        tg_id=int(message.from_user.id))
+    match data[6]:
         case 'mr':
             await message.answer(
-                text=f'<b>ФИО:</b> {data[0]}\n'
-                     f'<b>Ваш KAS:</b> {data[6]}\n'
-                     f'<b>Ваш CM:</b> {data[7]}\n'
-                     f'<b>Территория:</b> {data[1]}\n'
-                     f'<b>Регион:</b> {data[2]}\n'
-                     f'<b>Должность:</b> {POSITION[data[3]]}\n'
-                     f'<b>Уровень:</b> {data[4]}\n'
-                     f'<b>Баллы:</b> {data[5]}\n',
+                text=f'<b>ФИО:</b> {data[1]}\n'
+                     f'<b>Ваш KAS:</b> {data[9]}\n'
+                     f'<b>Ваш CM:</b> {data[10]}\n'
+                     f'<b>Территория:</b> {data[2]}\n'
+                     f'<b>Регион:</b> {data[5]}\n'
+                     f'<b>Должность:</b> {POSITION[data[6]]}\n'
+                     f'<b>Уровень:</b> {data[7]}\n'
+                     f'<b>Баллы:</b> {data[8]}\n',
                 reply_markup=keyboards.back)
         case 'kas':
             await message.answer(
-                text=f'<b>ФИО:</b> {data[0]}\n'
-                     f'<b>Ваш CM:</b> {data[7]}\n'
-                     f'<b>Территория:</b> {data[1]}\n'
-                     f'<b>Регион:</b> {data[2]}\n'
-                     f'<b>Должность:</b> {POSITION[data[3]]}\n'
-                     f'<b>Уровень:</b> {data[4]}\n'
-                     f'<b>Баллы:</b> {data[5]}\n',
+                text=f'<b>ФИО:</b> {data[1]}\n'
+                     f'<b>Ваш CM:</b> {data[10]}\n'
+                     f'<b>Территория:</b> {data[2]}\n'
+                     f'<b>Регион:</b> {data[5]}\n'
+                     f'<b>Должность:</b> {POSITION[data[6]]}\n'
+                     f'<b>Уровень:</b> {data[7]}\n'
+                     f'<b>Баллы:</b> {data[8]}\n',
                 reply_markup=keyboards.back)
         case 'cm':
             await message.answer(
-                text=f'<b>ФИО:</b> {data[0]}\n'
-                     f'<b>Территория:</b> {data[1]}\n'
-                     f'<b>Регион:</b> {data[2]}\n'
-                     f'<b>Должность:</b> {POSITION[data[3]]}\n'
-                     f'<b>Уровень:</b> {data[4]}\n'
-                     f'<b>Баллы:</b> {data[5]}\n',
+                text=f'<b>ФИО:</b> {data[1]}\n'
+                     f'<b>Территория:</b> {data[2]}\n'
+                     f'<b>Регион:</b> {data[5]}\n'
+                     f'<b>Должность:</b> {POSITION[data[6]]}\n'
+                     f'<b>Уровень:</b> {data[7]}\n'
+                     f'<b>Баллы:</b> {data[8]}\n',
                 reply_markup=keyboards.back)
 
 
-async def career(message: types.Message):
-    await message.answer(text='Данная функция в разработке',
-                         reply_markup=keyboards.back)
+@decorators.error_handler_message
+async def career(message: types.Message, state: FSMContext):
+    path = './files/career/career_growth.pdf'
+    file = AsyncPath(path)
+    if await file.is_file():
+        await message.answer_chat_action(action='upload_document')
+        async with aiofiles.open(file, 'rb') as file:
+            await message.answer_document(file,
+                                          reply_markup=keyboards.back)
+    else:
+        await message.answer(
+            text='❗ Файл не найден!',
+            reply_markup=keyboards.back)
 
 
 async def hr_documents(message: types.Message):
@@ -79,27 +93,24 @@ async def comments(message: types.Message):
     await UserState.profile_comments.set()
 
 
-@decorators.error_handler_message
+# @decorators.error_handler_message
 async def send_comments(message: types.Message, state: FSMContext):
     text_to_send = str(message.text)
-    user = await db.get_one(
-        queries.PROFILE,
+    user = await get_value_by_tgig(
+        value='username',
+        table='users',
         tg_id=int(message.from_user.id))
     cm_tg_id = await db.get_one(
-        await queries.get_value(
-            value='tg_id',
-            table='users'
-        ),
-        username=user[7]
-    )
-    if cm_tg_id[0]:
+        queries.CM_TG_ID,
+        int(message.from_user.id))
+    if cm_tg_id[0] and int(cm_tg_id[0]) != 0:
         await message.bot.send_message(
             chat_id=cm_tg_id[0],
             text=f'<b>Новое сообщение!</b>\n'
-                 f'<u>От:</u>  {user[0]}\n'
+                 f'<u>От:</u>  {user}\n'
                  f'<u>Тема:</u>  Отзыв об удовлетворенности '
                  f'работой/ботом\n\n'
-                 f'{text_to_send}')
+                 f'Текст: {text_to_send}')
         await message.answer(
             text='Ваш отзыв отправлен СитиМенеджеру!',
             reply_markup=keyboards.back)

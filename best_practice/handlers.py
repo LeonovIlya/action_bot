@@ -1,6 +1,5 @@
 import asyncio
 import locale
-import logging
 from datetime import datetime as dt
 import aiofiles
 from aiopath import AsyncPath
@@ -15,7 +14,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
 import config
 from loader import db
 from users.handlers import get_value_by_tgig
-from utils import decorators, keyboards, queries
+from utils import decorators, keyboards, queries, jobs
 from utils.states import UserState
 
 locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
@@ -48,37 +47,36 @@ async def practice_menu_cm(message: types.Message, state: FSMContext):
 @decorators.error_handler_message
 async def manage_practice(message: types.Message, state: FSMContext):
     data = await db.get_all(
-        queries.BP_NAME,
+        await queries.get_value(
+            value='*',
+            table='best_practice'),
         region=await get_value_by_tgig(
             value='region',
             table='users',
             tg_id=int(message.from_user.id)),
-        over=False)
+        is_over=False)
     if data:
         await message.answer(
             text='Выберите практику для управления:',
             reply_markup=keyboards.back)
         for i in data:
-            datetime_start = dt.strptime(i[2], '%Y-%m-%d %H:%M:%S')
-            datetime_stop = dt.strptime(i[3], '%Y-%m-%d %H:%M:%S')
-            start = datetime_start.strftime('%d %B %Y')
-            stop = datetime_stop.strftime('%d %B %Y')
+            start, stop = await jobs.datetime_op(i[6], i[7])
             keyboard = InlineKeyboardMarkup()
             keyboard.insert(
                 InlineKeyboardButton('Управлять',
-                                     callback_data=f'{i[0]}'))
-            file = AsyncPath(str(i[4]))
+                                     callback_data=f'{i[2]}'))
+            file = AsyncPath(str(i[10]))
             if await file.is_file():
-                async with aiofiles.open(str(i[4]), 'rb') as photo:
+                async with aiofiles.open(file, 'rb') as photo:
                     await message.answer_photo(
                         photo=photo,
-                        caption=f'<b>{str(i[0])}</b>\n\n{str(i[1])}\n\n'
+                        caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}\n\n'
                                 f'<b>Дата начала:</b>\n{str(start)}\n\n'
                                 f'<b>Дата окончания:</b>\n{str(stop)}',
                         reply_markup=keyboard)
             else:
                 await message.answer(
-                    text=f'<b>{str(i[0])}</b>\n\n{str(i[1])}\n\n'
+                    text=f'<b>{str(i[2])}</b>\n\n{str(i[3])}\n\n'
                          f'<b>Дата начала:</b>\n{str(start)}\n\n'
                          f'<b>Дата окончания:</b>\n{str(stop)}',
                     reply_markup=keyboard)
@@ -267,38 +265,37 @@ async def manage_change_stop(message: types.Message, state: FSMContext):
 @decorators.error_handler_message
 async def get_current_practice(message: types.Message, state: FSMContext):
     data = await db.get_all(
-        queries.BP_NAME,
+        await queries.get_value(
+            value='*',
+            table='best_practice'),
         region=await get_value_by_tgig(
             value='region',
             table='users',
             tg_id=int(message.from_user.id)),
         is_active=True,
-        over=False)
+        is_over=False)
     if data:
         await message.answer(
             text='Практики вашего региона, доступные на данный момент:',
             reply_markup=keyboards.back)
         for i in data:
-            datetime_start = dt.strptime(i[2], '%Y-%m-%d %H:%M:%S')
-            datetime_stop = dt.strptime(i[3], '%Y-%m-%d %H:%M:%S')
-            start = datetime_start.strftime('%d %B %Y')
-            stop = datetime_stop.strftime('%d %B %Y')
-            file = AsyncPath(str(i[4]))
+            start, stop = await jobs.datetime_op(i[6], i[7])
             inline_keyboard = InlineKeyboardMarkup()
             inline_keyboard.insert(
                 InlineKeyboardButton('Участвовать!📨',
-                                     callback_data=f'{i[0]}'))
+                                     callback_data=f'{i[2]}'))
+            file = AsyncPath(str(i[10]))
             if await file.is_file():
-                async with aiofiles.open(str(i[4]), 'rb') as file:
+                async with aiofiles.open(file, 'rb') as photo:
                     await message.answer_photo(
-                        photo=file,
-                        caption=f'<b>{str(i[0])}</b>\n\n{str(i[1])}\n\n'
+                        photo=photo,
+                        caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}\n\n'
                                 f'<b>Дата начала:</b>\n{str(start)}\n\n'
                                 f'<b>Дата окончания:</b>\n{str(stop)}',
                         reply_markup=inline_keyboard)
             else:
                 await message.answer(
-                    f'{str(i[0])}</b>\n\n{str(i[1])}\n\n'
+                    f'{str(i[2])}</b>\n\n{str(i[3])}\n\n'
                     f'<b>Дата начала:</b>\n{str(start)}\n\n'
                     f'<b>Дата окончания:</b>\n{str(stop)}',
                     reply_markup=inline_keyboard)
@@ -389,7 +386,7 @@ async def take_part_take_description(message: types.Message,
                   kas_approved=False,
                   cm_checked=False,
                   cm_approved=False,
-                  active=False,
+                  is_active=False,
                   posted=False)
     await message.answer(
         text='Ваше заявка принята, ожидайте решения!',
@@ -512,7 +509,7 @@ async def add_new_practice(message: types.Message, state: FSMContext):
         datetime_start=data['date_start'],
         datetime_stop=data['date_stop'],
         is_active=False,
-        over=False,
+        is_over=False,
         file_link=destination)
     await message.answer(
         text='Успешно добавлено',
@@ -522,7 +519,9 @@ async def add_new_practice(message: types.Message, state: FSMContext):
 @decorators.error_handler_message
 async def practice_requests_kas(message: types.Message, state: FSMContext):
     data = await db.get_all(
-        queries.BP_NAME,
+        await queries.get_value(
+            value='*',
+            table='best_practice'),
         region=await get_value_by_tgig(
             value='region',
             table='users',
@@ -536,9 +535,9 @@ async def practice_requests_kas(message: types.Message, state: FSMContext):
             inline_keyboard = InlineKeyboardMarkup()
             inline_keyboard.insert(
                 InlineKeyboardButton('Смотреть заявки👀',
-                                     callback_data=f'{i[0]}'))
+                                     callback_data=f'{i[2]}'))
             await message.answer(
-                text=f'<b>{i[0]}</b>',
+                text=f'<b>{i[2]}</b>',
                 reply_markup=inline_keyboard)
             await UserState.practice_requests_show_kas.set()
     else:
@@ -569,24 +568,26 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
                          ' Супервайзером!')
                 await asyncio.sleep(0.1)
                 bp_mr = await db.get_one(
-                    queries.BP_PHOTOS,
+                    await queries.get_value(
+                        value='*',
+                        table='best_practice_mr'),
                     best_practice=data['bp_name'],
                     kas=data['kas'],
                     kas_checked=False,
                     kas_approved=False,
                     cm_checked=False,
                     cm_approved=False,
-                    active=False)
+                    is_active=False)
                 if bp_mr:
                     await state.update_data(bp_id=bp_mr[0])
-                    await state.update_data(mr_tg_id=bp_mr[2])
-                    file = AsyncPath(str(bp_mr[4]))
+                    await state.update_data(mr_tg_id=bp_mr[4])
+                    file = AsyncPath(str(bp_mr[7]))
                     if await file.is_file():
-                        with open(file, 'rb') as file:
+                        with open(file, 'rb') as photo:
                             await callback.message.edit_media(
                                 media=InputMediaPhoto(
-                                    media=file,
-                                    caption=bp_mr[3]),
+                                    media=photo,
+                                    caption=bp_mr[6]),
                                 reply_markup=keyboards.accept_keyboard)
                 else:
                     await callback.message.answer(
@@ -605,24 +606,26 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
                          ' Супервайзером!\n\nВы можете попробовать еще раз!')
                 await asyncio.sleep(0.1)
                 bp_mr = await db.get_one(
-                    queries.BP_PHOTOS,
+                    await queries.get_value(
+                        value='*',
+                        table='best_practice_mr'),
                     best_practice=data['bp_name'],
                     kas=data['kas'],
                     kas_checked=False,
                     kas_approved=False,
                     cm_checked=False,
                     cm_approved=False,
-                    active=False)
+                    is_active=False)
                 if bp_mr:
                     await state.update_data(bp_id=bp_mr[0])
-                    await state.update_data(mr_tg_id=bp_mr[2])
-                    file = AsyncPath(str(bp_mr[4]))
+                    await state.update_data(mr_tg_id=bp_mr[4])
+                    file = AsyncPath(str(bp_mr[7]))
                     if await file.is_file():
-                        with open(file, 'rb') as file:
+                        with open(file, 'rb') as photo:
                             await callback.message.edit_media(
                                 media=InputMediaPhoto(
-                                    media=file,
-                                    caption=bp_mr[3]),
+                                    media=photo,
+                                    caption=bp_mr[6]),
                                 reply_markup=keyboards.accept_keyboard)
                 else:
                     await callback.message.answer(
@@ -634,28 +637,29 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
                     table='users',
                     tg_id=int(callback.from_user.id))
                 bp_mr = await db.get_one(
-                    queries.BP_PHOTOS,
+                    await queries.get_value(
+                        value='*',
+                        table='best_practice_mr'),
                     best_practice=data['bp_name'],
                     kas=kas,
                     kas_checked=False,
                     kas_approved=False,
                     cm_checked=False,
                     cm_approved=False,
-                    active=False)
+                    is_active=False)
                 if bp_mr:
                     await callback.message.delete()
                     await callback.message.answer_chat_action(
                         action='upload_photo')
                     await state.update_data(bp_id=bp_mr[0])
-                    await state.update_data(mr_tg_id=bp_mr[2])
+                    await state.update_data(mr_tg_id=bp_mr[4])
                     await state.update_data(kas=kas[0])
-                    file = AsyncPath(str(bp_mr[4]))
+                    file = AsyncPath(str(bp_mr[7]))
                     if await file.is_file():
-                        async with aiofiles.open(str(bp_mr[4]), 'rb') as file:
-                            photo = await file.read()
+                        async with aiofiles.open(file, 'rb') as photo:
                             await callback.message.answer_photo(
                                 photo=photo,
-                                caption=bp_mr[3],
+                                caption=bp_mr[6],
                                 reply_markup=keyboards.accept_keyboard)
                 else:
                     await callback.answer(
@@ -667,7 +671,10 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
 @decorators.error_handler_message
 async def practice_requests_cm(message: types.Message, state: FSMContext):
     data = await db.get_all(
-        queries.BP_NAME,
+        await queries.get_value(
+            value='*',
+            table='best_practice'
+        ),
         region=await get_value_by_tgig(
             value='region',
             table='users',
@@ -681,9 +688,9 @@ async def practice_requests_cm(message: types.Message, state: FSMContext):
             inline_keyboard = InlineKeyboardMarkup()
             inline_keyboard.insert(
                 InlineKeyboardButton('Смотреть заявки👀',
-                                     callback_data=f'{i[0]}'))
+                                     callback_data=f'{i[2]}'))
             await message.answer(
-                text=f'<b>{i[0]}</b>',
+                text=f'<b>{i[2]}</b>',
                 reply_markup=inline_keyboard)
             await UserState.practice_requests_show_cm.set()
     else:
@@ -704,7 +711,7 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
                 queries.BP_CM,
                 cm_checked=True,
                 cm_approved=True,
-                active=True,
+                is_active=True,
                 id=data['bp_id'])
             await callback.answer(
                 text='Заявка принята!',
@@ -715,23 +722,25 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
                      ' СитиМенеджером!')
             await asyncio.sleep(0.1)
             bp_mr = await db.get_one(
-                queries.BP_PHOTOS,
+                await queries.get_value(
+                    value='*',
+                    table='best_practice_mr'),
                 best_practice=data['bp_name'],
                 kas_checked=True,
                 kas_approved=True,
                 cm_checked=False,
                 cm_approved=False,
-                active=False)
+                is_active=False)
             if bp_mr:
                 await state.update_data(bp_id=bp_mr[0])
-                await state.update_data(mr_tg_id=bp_mr[2])
-                file = AsyncPath(str(bp_mr[4]))
+                await state.update_data(mr_tg_id=bp_mr[4])
+                file = AsyncPath(str(bp_mr[7]))
                 if await file.is_file():
-                    with open(file, 'rb') as file:
+                    with open(file, 'rb') as photo:
                         await callback.message.edit_media(
                             media=InputMediaPhoto(
-                                media=file,
-                                caption=bp_mr[3]),
+                                media=photo,
+                                caption=bp_mr[6]),
                             reply_markup=keyboards.accept_keyboard)
             else:
                 await callback.message.answer(
@@ -749,23 +758,25 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
                      ' СитиМенеджером!\n\nВы можете попробовать еще раз!')
             await asyncio.sleep(0.1)
             bp_mr = await db.get_one(
-                queries.BP_PHOTOS,
+                await queries.get_value(
+                    value='*',
+                    table='best_practice_mr'),
                 best_practice=data['bp_name'],
                 kas_checked=True,
                 kas_approved=True,
                 cm_checked=False,
                 cm_approved=False,
-                active=False)
+                is_active=False)
             if bp_mr:
                 await state.update_data(bp_id=bp_mr[0])
-                await state.update_data(mr_tg_id=bp_mr[2])
-                file = AsyncPath(str(bp_mr[4]))
+                await state.update_data(mr_tg_id=bp_mr[4])
+                file = AsyncPath(str(bp_mr[7]))
                 if await file.is_file():
-                    with open(file, 'rb') as file:
+                    with open(file, 'rb') as photo:
                         await callback.message.edit_media(
                             media=InputMediaPhoto(
-                                media=file,
-                                caption=bp_mr[3]),
+                                media=photo,
+                                caption=bp_mr[6]),
                             reply_markup=keyboards.accept_keyboard)
             else:
                 await callback.message.answer(
@@ -773,25 +784,27 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
                 await callback.message.delete()
         case _:
             bp_mr = await db.get_one(
-                queries.BP_PHOTOS,
+                await queries.get_value(
+                    value='*',
+                    table='best_practice_mr'),
                 best_practice=str(callback.data),
                 kas_checked=True,
                 kas_approved=True,
                 cm_checked=False,
                 cm_approved=False,
-                active=False)
+                is_active=False)
             if bp_mr:
                 await callback.message.delete()
                 await callback.message.answer_chat_action(
                     action='upload_photo')
                 await state.update_data(bp_id=bp_mr[0])
-                await state.update_data(mr_tg_id=bp_mr[2])
-                file = AsyncPath(str(bp_mr[4]))
+                await state.update_data(mr_tg_id=bp_mr[4])
+                file = AsyncPath(str(bp_mr[7]))
                 if await file.is_file():
-                    async with aiofiles.open(str(bp_mr[4]), 'rb') as file:
+                    async with aiofiles.open(file, 'rb') as photo:
                         await callback.message.answer_photo(
-                            photo=file,
-                            caption=bp_mr[3],
+                            photo=photo,
+                            caption=bp_mr[6],
                             reply_markup=keyboards.accept_keyboard)
             else:
                 await callback.answer(
@@ -803,32 +816,34 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
 @decorators.error_handler_message
 async def send_photos_to_channel(message: types.Message, state: FSMContext):
     data = await db.get_all(
-        queries.BP_NAME,
+        await queries.get_value(
+            value='*',
+            table='best_practice'),
         region=await get_value_by_tgig(
             value='region',
             table='users',
             tg_id=int(message.from_user.id)),
         is_active=True,
-        over=True)
+        is_over=True)
     if data:
         await message.answer(
             text='Выберите практику для отправки фотографий в канал:',
             reply_markup=keyboards.back)
         for i in data:
-            file = AsyncPath(str(i[4]))
             keyboard = InlineKeyboardMarkup()
             keyboard.insert(
                 InlineKeyboardButton('Отправить фото',
-                                     callback_data=f'{i[0]}'))
+                                     callback_data=f'{i[2]}'))
+            file = AsyncPath(str(i[10]))
             if await file.is_file():
-                async with aiofiles.open(str(i[4]), 'rb') as file:
+                async with aiofiles.open(file, 'rb') as photo:
                     await message.answer_photo(
-                        photo=file,
-                        caption=f'<b>{str(i[0])}</b>\n\n{str(i[1])}',
+                        photo=photo,
+                        caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
                         reply_markup=keyboard)
             else:
                 await message.answer(
-                    text=f'<b>{str(i[0])}</b>\n\n{str(i[1])}',
+                    text=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
                     reply_markup=keyboard)
             await UserState.practice_send_to_channel_cm.set()
     else:
@@ -847,13 +862,15 @@ async def send_photos_to_channel_confirm(callback: types.CallbackQuery,
             try:
                 data = await state.get_data()
                 photos = await db.get_all(
-                    queries.BP_PHOTOS,
+                    await queries.get_value(
+                        value='*',
+                        table='best_practice_mr'),
                     best_practice=data['bp_name'],
                     kas_checked=True,
                     kas_approved=True,
                     cm_checked=True,
                     cm_approved=True,
-                    active=True,
+                    is_active=True,
                     posted=False)
                 if photos:
                     await callback.bot.send_message(
@@ -862,18 +879,18 @@ async def send_photos_to_channel_confirm(callback: types.CallbackQuery,
                              f'{data["bp_name"]}"</b>')
                     await asyncio.sleep(1)
                     for i in photos:
-                        file = AsyncPath(str(i[4]))
+                        file = AsyncPath(str(i[7]))
                         if await file.is_file():
-                            async with aiofiles.open(str(i[4]), 'rb') as photo:
+                            async with aiofiles.open(file, 'rb') as photo:
                                 await callback.bot.send_photo(
                                     chat_id=config.CHANNEL_ID,
                                     photo=photo,
-                                    caption=f'<b>{i[1]}</b>\n\n{i[3]}')
+                                    caption=f'<b>{i[2]}</b>\n\n{i[6]}')
                                 await asyncio.sleep(0.1)
                         else:
                             await callback.bot.send_message(
                                 chat_id=config.CHANNEL_ID,
-                                text=f'<b>{i[1]}</b>\n\n{i[3]}')
+                                text=f'<b>{i[2]}</b>\n\n{i[6]}')
                             await asyncio.sleep(0.1)
                         await db.post(
                             await queries.update_value(
@@ -908,48 +925,40 @@ async def send_photos_to_channel_confirm(callback: types.CallbackQuery,
 @decorators.error_handler_message
 async def make_suggest(message: types.Message, state: FSMContext):
     await message.answer(
-        text='Здесь вы можете отправить СитиМенеджеру предложения по Лучшим '
-             'Практикам.\n'
+        text='Здесь вы можете отправить вашему СитиМенеджеру предложения по '
+             'Лучшим Практикам.\n'
              'Напишите и отправьте своё предложение или нажмите "Назад".',
         reply_markup=keyboards.back)
     position = await get_value_by_tgig(
         value='position',
         table='users',
         tg_id=int(message.from_user.id))
-    match position[0]:
+    match position:
         case 'mr':
             await UserState.practice_make_suggest_mr.set()
         case 'kas':
             await UserState.practice_make_suggest_kas.set()
 
-
-
 @decorators.error_handler_message
 async def send_suggest(message: types.Message, state: FSMContext):
         text_to_send = str(message.text)
-        user = await db.get_one(
-            queries.PROFILE,
-            tg_id=int(message.from_user.id))
         cm_tg_id = await db.get_one(
-            await queries.get_value(
-                value='tg_id',
-                table='users'),
-            username=user[7])
-        if cm_tg_id[0]:
+            queries.CM_TG_ID,
+            int(message.from_user.id))
+        if cm_tg_id[0] and int(cm_tg_id[0]) != 0:
             await message.bot.send_message(
-                chat_id=cm_tg_id[0],
+                chat_id=int(cm_tg_id[0]),
                 text=f'<b>Новое сообщение!</b>\n<u>От:</u>  {user[0]}\n'
                      f'<u>Тема:</u>  Предложения по Лучшим Практикам\n\n'
                      f'{text_to_send}')
             await message.answer(
-                text='Ваше предложение отправлено СитиМенеджеру!',
+                text='Ваше предложение отправлено вашему СитиМенеджеру!',
                 reply_markup=keyboards.back)
         else:
             await message.answer(
                 text='К сожалению ваш СитиМенеджер еще не подключен к боту,'
                      ' вы можете написать ему напрямую.',
                 reply_markup=keyboards.back)
-
 
 
 def register_handlers_best_practice(dp: Dispatcher):

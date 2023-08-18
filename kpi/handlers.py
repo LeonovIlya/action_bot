@@ -1,5 +1,4 @@
 import re
-import logging
 import aiofiles
 
 from aiopath import AsyncPath
@@ -25,20 +24,22 @@ async def kpi_menu(message: types.Message):
 @decorators.error_handler_message
 async def kpi_mr(message: types.Message, state: FSMContext):
     query = await db.get_one(
-        queries.KP_MR_QUERY,
+        await queries.get_value(
+            value='*',
+            table='users'),
         tg_id=int(message.from_user.id))
     await message.answer(
         text=f'```\n'
              f'        план|    факт|результат\n'
              f'{KPI[0]:<4}'
-             f'{query[0]:>8.2%}|{query[1]:>8.2%}|{query[2]:>8.2%}\n'
+             f'{query[11]:>8.2%}|{query[12]:>8.2%}|{query[13]:>8.2%}\n'
              f'{KPI[1]:<4}'
-             f'{query[3]:>8.2%}|{query[4]:>8.2%}|{query[5]:>8.2%}\n'
+             f'{query[14]:>8.2%}|{query[15]:>8.2%}|{query[16]:>8.2%}\n'
              f'{KPI[2]:<4}'
-             f'{query[6]:>8}|{query[7]:>8}|{query[8]:>8.2%}\n'
+             f'{query[17]:>8}|{query[18]:>8}|{query[19]:>8.2%}\n'
              f'{KPI[3]:<7}'
-             f'{query[9]:>5}|{query[10]:>8}|{query[11]:>8.2%}\n'
-             f'{KPI[4]:<7}{query[12]:>22}\n'
+             f'{query[20]:>5}|{query[21]:>8}|{query[22]:>8.2%}\n'
+             f'{KPI[4]:<7}{query[23]:>22}\n'
              f'```',
         reply_markup=keyboards.back,
         parse_mode='MarkdownV2')
@@ -56,10 +57,12 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
     tt_num = re.sub(r'\s', '', str(message.text))
     if re.match(r'\d{7}', tt_num) and len(tt_num) == 7:
         query = await db.get_one(
-            queries.KPI_TT_QUERY,
+            await queries.get_value(
+                value='*',
+                table='tt'),
             tt_num=tt_num)
         if query:
-            address = re.sub(R_STR, '', query[0])
+            address = re.sub(R_STR, '', query[4])
             address = address\
                 .replace("_", "\\_")\
                 .replace(".", "\\.")\
@@ -67,24 +70,24 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
                 .replace("*", "\\*")\
                 .replace("@", "\\@")\
                 .replace("&", "\\&")
-            mr = query[2].replace("_", "\\_")
+            mr = query[5].replace("_", "\\_")
             await message.answer(
                 text=f'*TT №* {tt_num}\n'
-                     f'*Сеть:* {query[1]}\n'
+                     f'*Сеть:* {query[3]}\n'
                      f'**Адрес:** {address}\n'
                      f'*MR:* {mr}\n'
-                     f'*KAS:* {query[3]}\n\n'
+                     f'*KAS:* {query[6]}\n\n'
                      f'```\n'
                      f'        план|    факт|результат\n'
                      f'{KPI[0]:<4}'
-                     f'{query[4]:>8.2%}|{query[5]:>8.2%}|{query[6]:>8.2%}\n'
+                     f'{query[8]:>8.2%}|{query[9]:>8.2%}|{query[10]:>8.2%}\n'
                      f'{KPI[1]:<4}'
-                     f'{query[7]:>8.2%}|{query[8]:>8.2%}|{query[9]:>8.2%}\n'
+                     f'{query[11]:>8.2%}|{query[12]:>8.2%}|{query[13]:>8.2%}\n'
                      f'{KPI[2]:<4}'
-                     f'{query[10]:>8}|{query[11]:>8}|{query[12]:>8.2%}\n'
+                     f'{query[14]:>8}|{query[15]:>8}|{query[16]:>8.2%}\n'
                      f'{KPI[3]:<7}'
-                     f'{query[13]:>5}|{query[14]:>8}|{query[15]:>8.2%}\n'
-                     f'{KPI[4]:<7}{query[16]:>22}\n'
+                     f'{query[17]:>5}|{query[18]:>8}|{query[19]:>8.2%}\n'
+                     f'{KPI[4]:<7}{query[20]:>22}\n'
                      f'```',
                 reply_markup=keyboards.back,
                 parse_mode='MarkdownV2')
@@ -107,7 +110,7 @@ async def get_bonus_info(message: types.Message):
     if await file.is_file():
         await message.answer_chat_action(
             action='upload_document')
-        async with aiofiles.open(file_link, 'rb') as photo:
+        async with aiofiles.open(file, 'rb') as photo:
             await message.answer_photo(
                 photo=photo,
                 reply_markup=keyboards.back)

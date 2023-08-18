@@ -26,15 +26,15 @@ class BotDB:
             await self.connection.close()
             self.connection = None
 
-    async def get_one(self, query: str, **kwargs):
+    async def get_one(self, query: str, *args, **kwargs):
         if self.connection is None:
             await self.create_connection()
+        if args:
+            values = list(args)
         if kwargs:
             query += ' WHERE ' + ' AND '.join(
                 ['' + k + ' = ?' for k in kwargs])
             values = list(kwargs.values())
-        else:
-            values = ''
         async with self.connection.execute(query, values) as cursor:
             return await cursor.fetchone()
 

@@ -12,7 +12,8 @@ from ratings.handlers import register_handlers_ratings
 from shop.handlers import register_handlers_shop
 from tools.handlers import register_handlers_tools
 from users.handlers import register_handlers_users
-from utils.jobs import check_bp_start, check_bp_stop, check_redis, clear_logs
+from utils.jobs import check_bp_start, check_bp_stop, check_mp_start, \
+    check_mp_stop, check_redis, clear_logs
 
 logger = logging.getLogger('bot')
 logging.getLogger('apscheduler.executors.default').propagate = False
@@ -30,6 +31,14 @@ def set_scheduled_jobs():
                       hours=1,
                       args=(dp,))
     scheduler.add_job(func=check_bp_start,
+                      trigger='interval',
+                      hours=1,
+                      args=(dp,))
+    scheduler.add_job(func=check_mp_start,
+                      trigger='interval',
+                      hours=1,
+                      args=(dp,))
+    scheduler.add_job(func=check_mp_stop,
                       trigger='interval',
                       hours=1,
                       args=(dp,))

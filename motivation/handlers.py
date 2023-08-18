@@ -1,6 +1,5 @@
 import asyncio
 import re
-import logging
 from datetime import datetime as dt
 import aiofiles
 from aiopath import AsyncPath
@@ -127,7 +126,7 @@ async def send_file_mp(callback: types.CallbackQuery, state: FSMContext):
             text='Отправляю файл...',
             show_alert=False)
         await asyncio.sleep(0.5)
-        async with aiofiles.open((data[0]), 'rb') as file:
+        async with aiofiles.open(file, 'rb') as file:
             await callback.message.answer_chat_action(
                 action='upload_document')
             await callback.message.answer_document(

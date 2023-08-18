@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import re
 import aiofiles
 
@@ -14,7 +13,7 @@ from loader import db
 from utils import decorators, keyboards, queries
 from utils.states import UserState
 
-CLUSTERS = ('0', '2',)
+CLUSTERS = ('0', '1', '2', '3')
 SHOPS = ('Верный', 'Дикси', 'Лента', 'Магнит', 'Перекресток', 'Пятерочка')
 SHOPS_PROMO = ('Атак', 'Ашан', 'Верный', 'ГиперГлобус', 'Дикси', 'Лента',
                'Магнит', 'Метро', 'Окей', 'Перекресток', 'Пятерочка')
@@ -99,7 +98,7 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
             show_alert=False)
         await asyncio.sleep(0.5)
         await callback.message.delete()
-        async with aiofiles.open(str(file_link[0]), 'rb') as file:
+        async with aiofiles.open(file, 'rb') as file:
             await callback.message.answer_chat_action(
                 action='upload_document')
             await callback.message.answer_document(
@@ -123,26 +122,28 @@ async def dmp_search(message: types.Message, state: FSMContext):
     tt_num = re.sub(r'\s', '', str(message.text))
     if re.match(r'\d{7}', tt_num) and len(tt_num) == 7:
         query = await db.get_one(
-            queries.DMP_TT_QUERY,
+            await queries.get_value(
+                value='*',
+                table='tt'),
             tt_num=tt_num)
         if query:
-            address = re.sub(R_STR, '', query[1])
-            if query[2] or query[3] or query[4]:
+            address = re.sub(R_STR, '', query[4])
+            if query[21] or query[22] or query[23]:
                 await message.answer(
                     text=f'<b>TT № {tt_num}:</b>\n'
-                         f'<b>Сеть:</b> {query[0]}\n'
+                         f'<b>Сеть:</b> {query[3]}\n'
                          f'<b>Адрес:</b> {address}\n\n'
                          f'<u>Оборудование:</u>\n'
-                         f'{query[2]}\n'
+                         f'{query[21]}\n'
                          f'<u>Выполнение:</u>\n'
-                         f'{query[3]:.2%}\n'
+                         f'{query[22]:.2%}\n'
                          f'<u>Комментарии:</u>\n'
-                         f'{query[4]}',
+                         f'{query[23]}',
                     reply_markup=keyboards.back)
             else:
                 await message.answer(
                     text=f'<b>TT № {tt_num}:</b>\n'
-                         f'<b>Сеть:</b> {query[0]}\n'
+                         f'<b>Сеть:</b> {query[3]}\n'
                          f'<b>Адрес:</b> {address}\n\n'
                          f'❗ Информация о ДМП в этой ТТ не найдена!',
                     reply_markup=keyboards.back)
@@ -188,7 +189,7 @@ async def get_promo_action(callback: types.CallbackQuery, state: FSMContext):
                 show_alert=False)
             await asyncio.sleep(0.5)
             await callback.message.delete()
-            async with aiofiles.open(str(file_link[0]), 'rb') as file:
+            async with aiofiles.open(file, 'rb') as file:
                 await callback.message.answer_chat_action(
                     action='upload_document')
                 await callback.message.answer_document(
@@ -245,8 +246,7 @@ async def picture_success_send(callback: types.CallbackQuery,
         await asyncio.sleep(0.5)
         await callback.message.delete()
         await callback.message.answer_chat_action(action='upload_document')
-        async with aiofiles.open(f'./files/k_u/{str(callback.data)}',
-                                 'rb') as file:
+        async with aiofiles.open(file, 'rb') as file:
             await callback.message.answer_document(
                 file,
                 reply_markup=keyboards.back)
