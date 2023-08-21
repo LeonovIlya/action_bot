@@ -91,20 +91,22 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
         name=name,
         shop_name=data['shop_name'],
         cluster=data['cluster'])
-    file = AsyncPath(str(file_link[0]))
-    if await file.is_file():
-        await callback.answer(
-            text='Отправляю файл...',
-            show_alert=False)
-        await asyncio.sleep(0.5)
-        await callback.message.delete()
-        async with aiofiles.open(file, 'rb') as file:
-            await callback.message.answer_chat_action(
-                action='upload_document')
-            await callback.message.answer_document(
-                file,
-                reply_markup=keyboards.back)
+    if file_link:
+        file = AsyncPath(str(file_link[0]))
+        if await file.is_file():
+            await callback.answer(
+                text='Отправляю файл...',
+                show_alert=False)
+            await asyncio.sleep(0.5)
+            await callback.message.delete()
+            async with aiofiles.open(file, 'rb') as file:
+                await callback.message.answer_chat_action(
+                    action='upload_document')
+                await callback.message.answer_document(
+                    file,
+                    reply_markup=keyboards.back)
     else:
+        await callback.bot.answer_callback_query(callback.id)
         await callback.message.answer(
             text='Файл не найден!',
             reply_markup=keyboards.back)

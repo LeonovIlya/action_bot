@@ -31,17 +31,21 @@ class BotDB:
             await self.create_connection()
         if args:
             values = list(args)
-        if kwargs:
+        elif kwargs:
             query += ' WHERE ' + ' AND '.join(
                 ['' + k + ' = ?' for k in kwargs])
             values = list(kwargs.values())
+        else:
+            values = ''
         async with self.connection.execute(query, values) as cursor:
             return await cursor.fetchone()
 
-    async def get_all(self, query: str, **kwargs):
+    async def get_all(self, query: str, *args, **kwargs):
         if self.connection is None:
             await self.create_connection()
-        if kwargs:
+        if args:
+            values = list(args)
+        elif kwargs:
             query += ' WHERE ' + ' AND '.join(
                 ['' + k + ' = ?' for k in kwargs])
             values = list(kwargs.values())
@@ -55,9 +59,10 @@ class BotDB:
             await self.create_connection()
         if args:
             values = list(args)
-            await self.connection.execute(query, values)
-        if kwargs:
+        elif kwargs:
             values = list(kwargs.values())
-            await self.connection.execute(query, values)
+        else:
+            values = ''
+        await self.connection.execute(query, values)
         await self.connection.commit()
         logging.info('NEW INSERT:\nQUERY: %s \nVALUES: %s', query, values)

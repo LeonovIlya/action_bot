@@ -480,12 +480,8 @@ async def add_new_practice_add_picture(message: types.Message,
 
 @decorators.error_handler_message
 async def add_new_practice(message: types.Message, state: FSMContext):
-    region = await get_value_by_tgig(
-        value='region',
-        table='users',
-        tg_id=int(message.from_user.id))
-    username = await get_value_by_tgig(
-        value='username',
+    user = await get_value_by_tgig(
+        value='*',
         table='users',
         tg_id=int(message.from_user.id))
     max_id = await db.get_one(
@@ -501,10 +497,10 @@ async def add_new_practice(message: types.Message, state: FSMContext):
         make_dirs=True)
     await db.post(
         queries.INSERT_PRACTICE,
-        region=region,
+        region=user[5],
         name=data['name'],
         desc=data['desc'],
-        user_added=username,
+        user_added=user[1],
         datetime_added=dt.now(),
         datetime_start=data['date_start'],
         datetime_stop=data['date_stop'],
@@ -512,7 +508,7 @@ async def add_new_practice(message: types.Message, state: FSMContext):
         is_over=False,
         file_link=destination)
     await message.answer(
-        text='Успешно добавлено',
+        text=f'Новая лучшая практика {data["name"]} успешно добавлена!',
         reply_markup=keyboards.back)
 
 

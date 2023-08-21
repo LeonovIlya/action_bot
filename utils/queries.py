@@ -7,19 +7,19 @@ INSERT_USER = "INSERT INTO users (username, ter_num, password, region, "\
 INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (best_practice, username, "\
                      "kas, tg_id, datetime_added, desc, file_link, " \
                      "kas_checked, kas_approved, cm_checked, cm_approved," \
-                     " active, posted) " \
+                     " is_active, posted) " \
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
 INSERT_PRACTICE = "INSERT INTO best_practice (region, name, desc, " \
                   "user_added, datetime_added, datetime_start, datetime_stop,"\
-                  " is_active, over, file_link) " \
+                  " is_active, is_over, file_link) " \
                   "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
 
 BP_KAS = "UPDATE best_practice_mr SET kas_checked = ?, kas_approved = ? " \
          "WHERE id = ?"
 
 BP_CM = "UPDATE best_practice_mr SET cm_checked = ?, cm_approved = ?, " \
-        "active = ? WHERE id = ?"
+        "is_active = ? WHERE id = ?"
 
 DELETE_BP = "DELETE FROM best_practice WHERE name = ?"
 
