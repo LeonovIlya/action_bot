@@ -74,7 +74,7 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
             await message.answer(
                 text=f'*TT №* {tt_num}\n'
                      f'*Сеть:* {query[3]}\n'
-                     f'**Адрес:** {address}\n'
+                     f'*Адрес:* {address}\n'
                      f'*MR:* {mr}\n'
                      f'*KAS:* {query[6]}\n\n'
                      f'```\n'
