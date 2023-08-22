@@ -1,8 +1,8 @@
 aiogram==2.25.1
 aiosqlite
-aiofiles
+aiofiles==23.2.1
 aiopath
-APScheduler
+APScheduler==3.10.4
 openpyxl
 python-dotenv
-redis
+redis==5.0.0
