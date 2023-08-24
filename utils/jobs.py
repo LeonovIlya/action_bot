@@ -98,7 +98,6 @@ async def check_mp_start(dp: Dispatcher):
                      f'{str(stop)}')
 
 
-
 # проверка на окончание лучших практик
 async def check_bp_stop(dp: Dispatcher):
     data = await check('best_practice', True, 'is_over')

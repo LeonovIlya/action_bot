@@ -4,11 +4,9 @@ INSERT_USER = "INSERT INTO users (username, ter_num, password, region, "\
               "position, grade, kas, citimanager) " \
               "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 
-INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (best_practice, username, "\
-                     "kas, tg_id, datetime_added, desc, file_link, " \
-                     "kas_checked, kas_approved, cm_checked, cm_approved," \
-                     " is_active, posted) " \
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (best_practice, user_id, "\
+                     "kas, tg_id, datetime_added, desc, file_link) "\
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)"
 
 INSERT_PRACTICE = "INSERT INTO best_practice (region, name, desc, " \
                   "user_added, datetime_added, datetime_start, datetime_stop,"\
@@ -27,6 +25,13 @@ DELETE_BP_MR = "DELETE FROM best_practice_mr WHERE id = ?"
 
 CM_TG_ID = "SELECT tg_id FROM users WHERE username = (SELECT citimanager " \
            "FROM users WHERE tg_id = ?)"
+
+GET_BP_PHOTOS = "SELECT * FROM best_practice_mr WHERE NOT EXISTS " \
+                "(SELECT id FROM best_practice_vote WHERE " \
+                "photo_id = best_practice_mr.id AND user_id = ?)"
+
+VOTE_BP = "INSERT INTO best_practice_vote (user_id, photo_id, is_voted) " \
+          "VALUES (?, ?, ?)"
 
 
 async def update_value(table: str, column_name: str, where_name: str) -> str:

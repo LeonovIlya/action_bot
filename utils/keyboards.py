@@ -62,6 +62,7 @@ ratings_menu_mr = ReplyKeyboardMarkup(keyboard=[
 practice_menu_mr = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Текущие практики🎯')],
     [KeyboardButton(text='Предложения📝')],
+    [KeyboardButton(text='Голосование🗳')],
     [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True
@@ -175,6 +176,18 @@ accept_keyboard.insert(
 accept_keyboard.insert(
     InlineKeyboardButton('Отклонить❌',
                          callback_data='Decline'))
+
+# инлайн клавиатура голосования
+vote_keyboard = InlineKeyboardMarkup()
+vote_keyboard.insert(
+    InlineKeyboardButton('Поставить Лайк 👍🏻',
+                         callback_data='Like👍🏻'))
+vote_keyboard.insert(
+    InlineKeyboardButton('Отметить просмотренным 👀',
+                         callback_data='Viewed👀'))
+vote_keyboard.insert(
+    InlineKeyboardButton('Следующее фото ➡',
+                         callback_data='Next ➡'))
 
 
 # формируем инлайн клавиатуру из кортежа

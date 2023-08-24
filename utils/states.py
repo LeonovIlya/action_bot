@@ -75,6 +75,8 @@ class UserState(StatesGroup):
     practice_make_suggest_mr = State()
     practice_make_suggest_kas = State()
 
+    practice_voting = State()
+
     ratings_menu_mr = State()
 
     profile_menu = State()

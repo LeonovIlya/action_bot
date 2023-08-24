@@ -10,7 +10,7 @@ from utils.states import UserState
 
 
 async def get_value_by_tgig(value: str, table: str, tg_id: int)\
-        ->Union[str, bool]:
+        -> Union[str, bool]:
     result = await db.get_one(
         await queries.get_value(
             value=value,
@@ -69,10 +69,13 @@ async def start_no_auth(message: types.Message, state: FSMContext):
             text='Вас приветствует чат-бот компании "Action"\n'
                  'Для начала работы с ботом нажмите кнопку "START"',
             reply_markup=keyboards.start)
+        await state.reset_state()
+        await state.reset_data()
 
 
 async def start_auth(message: types.Message):
-    await message.answer(text='Введите ваш логин (номер территории):')
+    await message.answer(text='Введите ваш логин (номер территории):',
+                         reply_markup=keyboards.back)
     await UserState.start_auth_get_login.set()
 
 
@@ -85,11 +88,12 @@ async def login_check(message: types.Message, state: FSMContext):
         ter_num=str(message.text))
     if login:
         await state.update_data(ter_num=str(message.text))
-        await message.answer(text='Введите ваш пароль:')
+        await message.answer(text='Введите ваш пароль:',
+                             reply_markup=keyboards.back)
         await UserState.start_auth_get_password.set()
     else:
         await message.answer(
-            text='Кажется вы ошиблись в логине, попробуйте еще раз!')
+            text='Кажется вы ошиблись в <b>ЛОГИНЕ</b>, попробуйте еще раз!')
 
 
 @decorators.error_handler_message
@@ -115,11 +119,16 @@ async def password_check(message: types.Message, state: FSMContext):
         await start_menu_and_state(message, state)
     else:
         await message.answer(
-            text='Кажется вы ошиблись в пароле, попробуйте еще раз!')
+            text='Кажется вы ошиблись в <b>ПАРОЛЕ</b>, попробуйте еще раз!')
 
 
 # компануем в обработчик
 def register_handlers_users(dp: Dispatcher):
+    dp.register_message_handler(
+        start_no_auth,
+        text='Назад↩',
+        state=(UserState.start_auth_get_login,
+               UserState.start_auth_get_password))
     dp.register_message_handler(
         start_auth,
         text='START▶️')

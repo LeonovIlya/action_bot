@@ -1,5 +1,6 @@
 import asyncio
 import locale
+import uuid
 from datetime import datetime as dt
 import aiofiles
 from aiopath import AsyncPath
@@ -308,40 +309,30 @@ async def get_current_practice(message: types.Message, state: FSMContext):
 
 @decorators.error_handler_callback
 async def take_part(callback: types.CallbackQuery, state: FSMContext):
-    username = await get_value_by_tgig(
-        value='username',
+    await callback.bot.answer_callback_query(callback.id)
+    user_id = await get_value_by_tgig(
+        value='id',
         table='users',
         tg_id=int(callback.from_user.id))
-    check_part = await db.get_one(
-        await queries.get_value(
-            value='*',
-            table='best_practice_mr'),
-        username=username,
-        best_practice=str(callback.data))
-    if check_part:
-        await callback.answer(text='Вы уже участвуете!',
-                              show_alert=False)
-    else:
-        await callback.bot.answer_callback_query(callback.id)
-        await state.update_data(bp_name=str(callback.data))
-        await state.update_data(username=username)
-        await callback.message.answer(
-            text=f'Вы уверены, что хотите участвовать в практике:\n'
-                 f'<b>{callback.data}?</b>',
-            reply_markup=keyboards.confirm_keyboard)
-        await UserState.practice_take_part_mr_confirm.set()
+    await state.update_data(bp_name=str(callback.data))
+    await state.update_data(user_id=user_id)
+    await callback.message.answer(
+        text=f'Вы уверены, что хотите участвовать в практике:\n'
+             f'<b>{callback.data}?</b>',
+        reply_markup=keyboards.confirm_keyboard)
+    await UserState.practice_take_part_mr_confirm.set()
 
 
 
 async def take_part_confirmation(callback: types.CallbackQuery):
     await callback.bot.answer_callback_query(callback.id)
+    await callback.message.delete()
     match callback.data:
         case 'bp_yes':
             await callback.message.answer(
                 text='Отправьте фотографию для участия:')
             await UserState.practice_take_part_mr_photo.set()
         case 'bp_no':
-            await callback.message.delete()
             await UserState.practice_menu_mr.set()
 
 
@@ -354,7 +345,7 @@ async def take_part_take_photo(message: types.Message, state: FSMContext):
             table='best_practice'),
         name=str(data['bp_name']))
     destination = f'./files/best_practice/{int(bp_id[0])}/' \
-                  f'{int(message.from_user.id)}.jpg '
+                  f'{uuid.uuid1()}.jpg '
     await state.update_data(destination=destination)
     await message.photo[-1].download(
         destination_file=destination,
@@ -376,18 +367,12 @@ async def take_part_take_description(message: types.Message,
     data = await state.get_data()
     await db.post(queries.INSERT_PRACTICE_MR,
                   best_practice=str(data['bp_name']),
-                  username=str(data['username']),
+                  user_id=str(data['user_id']),
                   kas=kas,
                   tg_id=int(message.from_user.id),
                   datetime_added=dt.now(),
                   desc=str(message.text),
-                  file_link=str(data['destination']),
-                  kas_checked=False,
-                  kas_approved=False,
-                  cm_checked=False,
-                  cm_approved=False,
-                  is_active=False,
-                  posted=False)
+                  file_link=str(data['destination']))
     await message.answer(
         text='Ваше заявка принята, ожидайте решения!',
         reply_markup=keyboards.back)
@@ -405,7 +390,8 @@ async def add_new_practice_add_name(message: types.Message):
 async def add_new_practice_add_desc(message: types.Message, state: FSMContext):
     name = str(message.text)
     if len(name) > 45:
-        await message.answer(text='❗ Превышен лимит в 45 символов!')
+        await message.answer(text='❗ Превышен лимит в 45 символов!\n'
+                                  'Введите название еще раз!')
     else:
         check_name = await db.get_one(
             await queries.get_value(
@@ -500,7 +486,7 @@ async def add_new_practice(message: types.Message, state: FSMContext):
         region=user[5],
         name=data['name'],
         desc=data['desc'],
-        user_added=user[1],
+        user_added=user[0],
         datetime_added=dt.now(),
         datetime_start=data['date_start'],
         datetime_stop=data['date_stop'],
@@ -508,7 +494,7 @@ async def add_new_practice(message: types.Message, state: FSMContext):
         is_over=False,
         file_link=destination)
     await message.answer(
-        text=f'Новая лучшая практика {data["name"]} успешно добавлена!',
+        text=f'Новая лучшая практика <b>{data["name"]}</b> успешно добавлена!',
         reply_markup=keyboards.back)
 
 
@@ -545,123 +531,123 @@ async def practice_requests_kas(message: types.Message, state: FSMContext):
 @decorators.error_handler_callback
 async def practice_requests_show_kas(callback: types.CallbackQuery,
                                      state: FSMContext):
-        if callback.data not in ('Accept', 'Decline'):
-            await state.update_data(bp_name=str(callback.data))
-        data = await state.get_data()
-        match callback.data:
-            case 'Accept':
-                await db.post(
-                    queries.BP_KAS,
-                    kas_checked=True,
-                    kas_approved=True,
-                    id=data['bp_id'])
+    if callback.data not in ('Accept', 'Decline'):
+        await state.update_data(bp_name=str(callback.data))
+    data = await state.get_data()
+    match callback.data:
+        case 'Accept':
+            await db.post(
+                queries.BP_KAS,
+                kas_checked=True,
+                kas_approved=True,
+                id=data['bp_id'])
+            await callback.answer(
+                text='Заявка принята!',
+                show_alert=False)
+            await callback.bot.send_message(
+                chat_id=data['mr_tg_id'],
+                text='✅ Ваша заявка на участие в Лучшей Практике принята'
+                     ' Супервайзером!')
+            await asyncio.sleep(0.1)
+            bp_mr = await db.get_one(
+                await queries.get_value(
+                    value='*',
+                    table='best_practice_mr'),
+                best_practice=data['bp_name'],
+                kas=data['kas'],
+                kas_checked=False,
+                kas_approved=False,
+                cm_checked=False,
+                cm_approved=False,
+                is_active=False)
+            if bp_mr:
+                await state.update_data(bp_id=bp_mr[0])
+                await state.update_data(mr_tg_id=bp_mr[4])
+                file = AsyncPath(str(bp_mr[7]))
+                if await file.is_file():
+                    with open(file, 'rb') as photo:
+                        await callback.message.edit_media(
+                            media=InputMediaPhoto(
+                                media=photo,
+                                caption=bp_mr[6]),
+                            reply_markup=keyboards.accept_keyboard)
+            else:
+                await callback.message.answer(
+                    text='Больше нет заявок для модерации!')
+                await callback.message.delete()
+        case 'Decline':
+            await db.post(
+                queries.DELETE_BP_MR,
+                id=data['bp_id'])
+            await callback.answer(
+                text='Заявка отклонена!',
+                show_alert=False)
+            await callback.bot.send_message(
+                chat_id=data['mr_tg_id'],
+                text='❗ Ваша заявка на участие в Лучшей Практике отклонена'
+                     ' Супервайзером!\n\nВы можете попробовать еще раз!')
+            await asyncio.sleep(0.1)
+            bp_mr = await db.get_one(
+                await queries.get_value(
+                    value='*',
+                    table='best_practice_mr'),
+                best_practice=data['bp_name'],
+                kas=data['kas'],
+                kas_checked=False,
+                kas_approved=False,
+                cm_checked=False,
+                cm_approved=False,
+                is_active=False)
+            if bp_mr:
+                await state.update_data(bp_id=bp_mr[0])
+                await state.update_data(mr_tg_id=bp_mr[4])
+                file = AsyncPath(str(bp_mr[7]))
+                if await file.is_file():
+                    with open(file, 'rb') as photo:
+                        await callback.message.edit_media(
+                            media=InputMediaPhoto(
+                                media=photo,
+                                caption=bp_mr[6]),
+                            reply_markup=keyboards.accept_keyboard)
+            else:
+                await callback.message.answer(
+                    text='Больше нет заявок для модерации!')
+                await callback.message.delete()
+        case _:
+            kas = await get_value_by_tgig(
+                value='username',
+                table='users',
+                tg_id=int(callback.from_user.id))
+            bp_mr = await db.get_one(
+                await queries.get_value(
+                    value='*',
+                    table='best_practice_mr'),
+                best_practice=data['bp_name'],
+                kas=kas,
+                kas_checked=False,
+                kas_approved=False,
+                cm_checked=False,
+                cm_approved=False,
+                is_active=False)
+            if bp_mr:
+                await callback.message.delete()
+                await callback.message.answer_chat_action(
+                    action='upload_photo')
+                await state.update_data(bp_id=bp_mr[0])
+                await state.update_data(mr_tg_id=bp_mr[4])
+                await state.update_data(kas=kas[0])
+                file = AsyncPath(str(bp_mr[7]))
+                if await file.is_file():
+                    async with aiofiles.open(file, 'rb') as photo:
+                        await callback.message.answer_photo(
+                            photo=photo,
+                            caption=bp_mr[6],
+                            reply_markup=keyboards.accept_keyboard)
+            else:
                 await callback.answer(
-                    text='Заявка принята!',
-                    show_alert=False)
-                await callback.bot.send_message(
-                    chat_id=data['mr_tg_id'],
-                    text='✅ Ваша заявка на участие в Лучшей Практике принята'
-                         ' Супервайзером!')
-                await asyncio.sleep(0.1)
-                bp_mr = await db.get_one(
-                    await queries.get_value(
-                        value='*',
-                        table='best_practice_mr'),
-                    best_practice=data['bp_name'],
-                    kas=data['kas'],
-                    kas_checked=False,
-                    kas_approved=False,
-                    cm_checked=False,
-                    cm_approved=False,
-                    is_active=False)
-                if bp_mr:
-                    await state.update_data(bp_id=bp_mr[0])
-                    await state.update_data(mr_tg_id=bp_mr[4])
-                    file = AsyncPath(str(bp_mr[7]))
-                    if await file.is_file():
-                        with open(file, 'rb') as photo:
-                            await callback.message.edit_media(
-                                media=InputMediaPhoto(
-                                    media=photo,
-                                    caption=bp_mr[6]),
-                                reply_markup=keyboards.accept_keyboard)
-                else:
-                    await callback.message.answer(
-                        text='Больше нет заявок для модерации!')
-                    await callback.message.delete()
-            case 'Decline':
-                await db.post(
-                    queries.DELETE_BP_MR,
-                    id=data['bp_id'])
-                await callback.answer(
-                    text='Заявка отклонена!',
-                    show_alert=False)
-                await callback.bot.send_message(
-                    chat_id=data['mr_tg_id'],
-                    text='❗ Ваша заявка на участие в Лучшей Практике отклонена'
-                         ' Супервайзером!\n\nВы можете попробовать еще раз!')
-                await asyncio.sleep(0.1)
-                bp_mr = await db.get_one(
-                    await queries.get_value(
-                        value='*',
-                        table='best_practice_mr'),
-                    best_practice=data['bp_name'],
-                    kas=data['kas'],
-                    kas_checked=False,
-                    kas_approved=False,
-                    cm_checked=False,
-                    cm_approved=False,
-                    is_active=False)
-                if bp_mr:
-                    await state.update_data(bp_id=bp_mr[0])
-                    await state.update_data(mr_tg_id=bp_mr[4])
-                    file = AsyncPath(str(bp_mr[7]))
-                    if await file.is_file():
-                        with open(file, 'rb') as photo:
-                            await callback.message.edit_media(
-                                media=InputMediaPhoto(
-                                    media=photo,
-                                    caption=bp_mr[6]),
-                                reply_markup=keyboards.accept_keyboard)
-                else:
-                    await callback.message.answer(
-                        text='Больше нет заявок для модерации!')
-                    await callback.message.delete()
-            case _:
-                kas = await get_value_by_tgig(
-                    value='username',
-                    table='users',
-                    tg_id=int(callback.from_user.id))
-                bp_mr = await db.get_one(
-                    await queries.get_value(
-                        value='*',
-                        table='best_practice_mr'),
-                    best_practice=data['bp_name'],
-                    kas=kas,
-                    kas_checked=False,
-                    kas_approved=False,
-                    cm_checked=False,
-                    cm_approved=False,
-                    is_active=False)
-                if bp_mr:
-                    await callback.message.delete()
-                    await callback.message.answer_chat_action(
-                        action='upload_photo')
-                    await state.update_data(bp_id=bp_mr[0])
-                    await state.update_data(mr_tg_id=bp_mr[4])
-                    await state.update_data(kas=kas[0])
-                    file = AsyncPath(str(bp_mr[7]))
-                    if await file.is_file():
-                        async with aiofiles.open(file, 'rb') as photo:
-                            await callback.message.answer_photo(
-                                photo=photo,
-                                caption=bp_mr[6],
-                                reply_markup=keyboards.accept_keyboard)
-                else:
-                    await callback.answer(
-                        text='Нет заявок для модерации!',
-                        show_alert=True)
-                    await callback.message.delete()
+                    text='Нет заявок для модерации!',
+                    show_alert=True)
+                await callback.message.delete()
 
 
 @decorators.error_handler_message
@@ -957,6 +943,142 @@ async def send_suggest(message: types.Message, state: FSMContext):
                 reply_markup=keyboards.back)
 
 
+
+@decorators.error_handler_message
+async def practice_voting(message: types.Message, state: FSMContext):
+    data = await db.get_all(
+        await queries.get_value(
+            value='*',
+            table='best_practice'),
+        region=await get_value_by_tgig(
+            value='region',
+            table='users',
+            tg_id=int(message.from_user.id)),
+        is_active=True,
+        is_over=True)
+    if data:
+        await message.answer(
+            text='Практики вашего региона, доступные для голосования на '
+                 'данный момент:',
+            reply_markup=keyboards.back)
+        for i in data:
+            inline_keyboard = InlineKeyboardMarkup()
+            inline_keyboard.insert(
+                InlineKeyboardButton('Голосовать!🗳',
+                                     callback_data=f'{i[0]}'))
+            file = AsyncPath(str(i[10]))
+            if await file.is_file():
+                async with aiofiles.open(file, 'rb') as photo:
+                    await message.answer_photo(
+                        photo=photo,
+                        caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
+                        reply_markup=inline_keyboard)
+            else:
+                await message.answer(
+                    text=f'{str(i[2])}</b>\n\n{str(i[3])}',
+                    reply_markup=inline_keyboard)
+            await UserState.practice_voting.set()
+    else:
+        await message.answer(
+            text='Доступных практик в вашем регионе для голосования на данный '
+                 'момент нет!',
+            reply_markup=keyboards.back)
+
+
+@decorators.error_handler_callback
+async def practice_voting_show(callback: types.CallbackQuery,
+                               state: FSMContext):
+    user_id = await get_value_by_tgig(
+                    value='id',
+                    table='users',
+                    tg_id=int(callback.from_user.id))
+
+    if callback.data not in ('Like👍🏻', 'Viewed👀', 'Next ➡'):
+        await state.update_data(bp_id=int(callback.data))
+
+    data = await state.get_data()
+
+    match callback.data:
+
+        case 'Like👍🏻':
+            await callback.answer(
+                text='Лайк поставлен!',
+                show_alert=False)
+            await db.post(
+                queries.VOTE_BP,
+                user_id=user_id,
+                photo_id=data['photo_id'],
+                is_voted=True)
+            await asyncio.sleep(0.1)
+            bp_photo = await db.get_one(
+                queries.GET_BP_PHOTOS,
+                user_id)
+            if bp_photo:
+                await state.update_data(photo_id=bp_photo[0])
+                file = AsyncPath(str(bp_photo[7]))
+                if await file.is_file():
+                    with open(file, 'rb') as photo:
+                        await callback.message.edit_media(
+                            media=InputMediaPhoto(
+                                media=photo,
+                                caption=bp_photo[6]),
+                            reply_markup=keyboards.vote_keyboard)
+            else:
+                await callback.message.answer(
+                    text='Больше нет заявок для голосования!')
+                await callback.message.delete()
+
+        case 'Viewed👀':
+            await callback.answer(
+                text='Отмечено как просмотренное!',
+                show_alert=False)
+            await asyncio.sleep(0.1)
+            bp_photo = await db.get_one(
+                queries.GET_BP_PHOTOS,
+                user_id)
+            if bp_photo:
+                await state.update_data(photo_id=bp_photo[0])
+                file = AsyncPath(str(bp_photo[7]))
+                if await file.is_file():
+                    with open(file, 'rb') as photo:
+                        await callback.message.edit_media(
+                            media=InputMediaPhoto(
+                                media=photo,
+                                caption=bp_photo[6]),
+                            reply_markup=keyboards.vote_keyboard)
+            else:
+                await callback.message.answer(
+                    text='Больше нет заявок для голосования!')
+                await callback.message.delete()
+
+        case 'Next ➡':
+            pass
+
+        case _:
+            bp_photo = await db.get_one(
+                queries.GET_BP_PHOTOS,
+                user_id)
+            if bp_photo:
+                await callback.message.delete()
+                await callback.message.answer_chat_action(
+                    action='upload_photo')
+                await state.update_data(photo_id=bp_photo[0])
+                file = AsyncPath(str(bp_photo[7]))
+                if await file.is_file():
+                    async with aiofiles.open(file, 'rb') as photo:
+                        await callback.message.answer_photo(
+                            photo=photo,
+                            caption=bp_photo[6],
+                            reply_markup=keyboards.vote_keyboard)
+            else:
+                await callback.answer(
+                    text='Нет заявок для голосования!',
+                    show_alert=True)
+                await callback.message.delete()
+
+
+
+
 def register_handlers_best_practice(dp: Dispatcher):
     dp.register_message_handler(
         practice_menu_mr,
@@ -965,7 +1087,8 @@ def register_handlers_best_practice(dp: Dispatcher):
                UserState.practice_make_suggest_mr,
                UserState.practice_take_part_mr_confirm,
                UserState.practice_take_part_mr_photo,
-               UserState.practice_take_part_mr_desc))
+               UserState.practice_take_part_mr_desc,
+               UserState.practice_voting))
     dp.register_message_handler(
         practice_menu_kas,
         text='Назад↩',
@@ -1095,3 +1218,11 @@ def register_handlers_best_practice(dp: Dispatcher):
         send_suggest,
         state=(UserState.practice_make_suggest_mr,
                UserState.practice_make_suggest_kas))
+
+    dp.register_message_handler(
+        practice_voting,
+        text='Голосование🗳',
+        state=UserState.practice_menu_mr)
+    dp.register_callback_query_handler(
+        practice_voting_show,
+        state=UserState.practice_voting)
