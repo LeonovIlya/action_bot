@@ -28,10 +28,12 @@ CM_TG_ID = "SELECT tg_id FROM users WHERE username = (SELECT citimanager " \
 
 GET_BP_PHOTOS = "SELECT * FROM best_practice_mr WHERE NOT EXISTS " \
                 "(SELECT id FROM best_practice_vote WHERE " \
-                "photo_id = best_practice_mr.id AND user_id = ?)"
+                "photo_id = best_practice_mr.id AND tg_id = ?)"
 
-VOTE_BP = "INSERT INTO best_practice_vote (user_id, photo_id, is_voted) " \
+VOTE_BP = "INSERT INTO best_practice_vote (tg_id, photo_id, is_voted) " \
           "VALUES (?, ?, ?)"
+
+LIKES_UP = "UPDATE best_practice_mr SET likes = likes + 1 WHERE id = ?"
 
 
 async def update_value(table: str, column_name: str, where_name: str) -> str:

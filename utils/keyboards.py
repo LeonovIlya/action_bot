@@ -185,10 +185,6 @@ vote_keyboard.insert(
 vote_keyboard.insert(
     InlineKeyboardButton('Отметить просмотренным 👀',
                          callback_data='Viewed👀'))
-vote_keyboard.insert(
-    InlineKeyboardButton('Следующее фото ➡',
-                         callback_data='Next ➡'))
-
 
 # формируем инлайн клавиатуру из кортежа
 async def get_inline_buttons(data: tuple | list) -> InlineKeyboardMarkup:

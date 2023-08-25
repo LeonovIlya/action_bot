@@ -985,34 +985,35 @@ async def practice_voting(message: types.Message, state: FSMContext):
             reply_markup=keyboards.back)
 
 
+# Оценивание заявок в лучших практиках через бота и меню
 @decorators.error_handler_callback
 async def practice_voting_show(callback: types.CallbackQuery,
                                state: FSMContext):
-    user_id = await get_value_by_tgig(
-                    value='id',
-                    table='users',
-                    tg_id=int(callback.from_user.id))
-
-    if callback.data not in ('Like👍🏻', 'Viewed👀', 'Next ➡'):
-        await state.update_data(bp_id=int(callback.data))
-
+    tg_id = int(callback.from_user.id)
     data = await state.get_data()
-
     match callback.data:
-
-        case 'Like👍🏻':
-            await callback.answer(
-                text='Лайк поставлен!',
-                show_alert=False)
+        case 'Like👍🏻' | 'Viewed👀':
+            match callback.data:
+                case 'Like👍🏻':
+                    await callback.answer(
+                        text='Лайк поставлен!',
+                        show_alert=False)
+                    await db.post(
+                        queries.LIKES_UP,
+                        id=data['photo_id'])
+                case 'Viewed👀':
+                    await callback.answer(
+                        text='Отмечено как просмотренное!',
+                        show_alert=False)
             await db.post(
                 queries.VOTE_BP,
-                user_id=user_id,
+                tg_id=tg_id,
                 photo_id=data['photo_id'],
                 is_voted=True)
             await asyncio.sleep(0.1)
             bp_photo = await db.get_one(
                 queries.GET_BP_PHOTOS,
-                user_id)
+                tg_id)
             if bp_photo:
                 await state.update_data(photo_id=bp_photo[0])
                 file = AsyncPath(str(bp_photo[7]))
@@ -1027,37 +1028,10 @@ async def practice_voting_show(callback: types.CallbackQuery,
                 await callback.message.answer(
                     text='Больше нет заявок для голосования!')
                 await callback.message.delete()
-
-        case 'Viewed👀':
-            await callback.answer(
-                text='Отмечено как просмотренное!',
-                show_alert=False)
-            await asyncio.sleep(0.1)
-            bp_photo = await db.get_one(
-                queries.GET_BP_PHOTOS,
-                user_id)
-            if bp_photo:
-                await state.update_data(photo_id=bp_photo[0])
-                file = AsyncPath(str(bp_photo[7]))
-                if await file.is_file():
-                    with open(file, 'rb') as photo:
-                        await callback.message.edit_media(
-                            media=InputMediaPhoto(
-                                media=photo,
-                                caption=bp_photo[6]),
-                            reply_markup=keyboards.vote_keyboard)
-            else:
-                await callback.message.answer(
-                    text='Больше нет заявок для голосования!')
-                await callback.message.delete()
-
-        case 'Next ➡':
-            pass
-
         case _:
             bp_photo = await db.get_one(
                 queries.GET_BP_PHOTOS,
-                user_id)
+                tg_id)
             if bp_photo:
                 await callback.message.delete()
                 await callback.message.answer_chat_action(
@@ -1077,7 +1051,30 @@ async def practice_voting_show(callback: types.CallbackQuery,
                 await callback.message.delete()
 
 
+# Оценивание заявок в лучших практиках через тг-группу
+async def get_like(callback: types.CallbackQuery, state: FSMContext):
 
+    photo_id = str(callback.data).split('_')[2]
+    tg_id = int(callback.from_user.id)
+    check_vote = await db.get_one(
+        "SELECT * FROM best_practice_vote WHERE tg_id = ? AND photo_id = ? "
+        "AND is_voted = True",
+        tg_id,
+        photo_id)
+    if check_vote:
+        await callback.answer(text='Вы уже проголосовали!',
+                        show_alert=False)
+    else:
+        await db.post(
+            queries.VOTE_BP,
+            tg_id,
+            photo_id,
+            True)
+        await db.post(
+            queries.LIKES_UP,
+            photo_id)
+        await callback.answer(text='Спасибо, ваш голос учтён!',
+                        show_alert=False)
 
 def register_handlers_best_practice(dp: Dispatcher):
     dp.register_message_handler(
@@ -1226,3 +1223,6 @@ def register_handlers_best_practice(dp: Dispatcher):
     dp.register_callback_query_handler(
         practice_voting_show,
         state=UserState.practice_voting)
+    dp.register_callback_query_handler(
+        get_like,
+        text_startswith='bp_vote_')
