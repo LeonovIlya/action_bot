@@ -13,7 +13,8 @@ from shop.handlers import register_handlers_shop
 from tools.handlers import register_handlers_tools
 from users.handlers import register_handlers_users
 from utils.jobs import check_bp_start, check_bp_stop, check_mp_start, \
-    check_mp_stop, check_redis, clear_logs
+    check_mp_stop, clear_logs#, check_redis
+
 
 logger = logging.getLogger('bot')
 logging.getLogger('apscheduler.executors.default').propagate = False
@@ -42,10 +43,10 @@ def set_scheduled_jobs():
                       trigger='interval',
                       hours=1,
                       args=(dp,))
-    scheduler.add_job(func=check_redis,
-                      trigger='interval',
-                      minutes=1,
-                      args=(dp,))
+    # scheduler.add_job(func=check_redis,
+    #                   trigger='interval',
+    #                   minutes=1,
+    #                   args=(dp,))
     scheduler.add_job(func=clear_logs,
                       trigger='interval',
                       days=30,

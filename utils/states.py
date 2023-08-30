@@ -70,7 +70,10 @@ class UserState(StatesGroup):
     practice_requests_show_kas = State()
     practice_requests_show_cm = State()
 
-    practice_send_to_channel_cm = State()
+    practice_vote_menu_cm = State()
+    practice_start_voting = State()
+    practice_stop_voting = State()
+    practice_top_voting = State()
 
     practice_make_suggest_mr = State()
     practice_make_suggest_kas = State()

@@ -52,7 +52,7 @@ async def check_bp_start(dp: Dispatcher):
     if data:
         for i in data:
             start, stop = await datetime_op(i[6], i[7])
-            file = AsyncPath(str(i[10]))
+            file = AsyncPath(str(i[8]))
             if await file.is_file():
                 async with aiofiles.open(file, 'rb') as photo:
                     await dp.bot.send_photo(
@@ -121,19 +121,18 @@ async def check_mp_stop(dp: Dispatcher):
 
 
 # проверка работы редиса
-async def check_redis(dp: Dispatcher):
-    r = redis.Redis(host=config.REDIS_HOST,
-                    # password=config.REDIS_PASSWORD,
-                    socket_connect_timeout=1)
-    try:
-        r.ping()
-        logging.info('Checking redis connection - OK')
-    except (redis.exceptions.ConnectionError,
-            redis.exceptions.TimeoutError):
-        await dp.bot.send_message(
-            chat_id=config.ADMIN_ID,
-            text='‼REDIS УПАЛ‼'
-        )
+# async def check_redis(dp: Dispatcher):
+#     r = redis.Redis(host=config.REDIS_HOST,
+#                     password=config.REDIS_PASSWORD,
+#                     socket_connect_timeout=1)
+#     try:
+#         r.ping()
+#         logging.info('Checking redis connection - OK')
+#     except (redis.exceptions.ConnectionError,
+#             redis.exceptions.TimeoutError):
+#         await dp.bot.send_message(
+#             chat_id=config.ADMIN_ID,
+#             text='‼REDIS УПАЛ‼')
 
 
 # очистка лог-файла

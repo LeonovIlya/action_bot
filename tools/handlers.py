@@ -1,5 +1,6 @@
 import asyncio
 import re
+import logging
 import aiofiles
 
 from aiofiles import os as aios
@@ -66,7 +67,9 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
             reply_markup=keyboard)
     else:
         data = await db.get_all(
-            queries.NAME_QUERY,
+            await queries.get_value(
+                value='DISTINCT name',
+                table='planograms'),
             shop_name=str(callback.data))
         data = [i[0] for i in data]
         keyboard = await keyboards.get_inline_buttons(data)
@@ -91,22 +94,21 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
         name=name,
         shop_name=data['shop_name'],
         cluster=data['cluster'])
-    if file_link:
+    try:
+        await callback.message.delete()
         file = AsyncPath(str(file_link[0]))
-        if await file.is_file():
+        async with aiofiles.open(file, 'rb') as file:
             await callback.answer(
                 text='Отправляю файл...',
                 show_alert=False)
-            await asyncio.sleep(0.5)
-            await callback.message.delete()
-            async with aiofiles.open(file, 'rb') as file:
-                await callback.message.answer_chat_action(
-                    action='upload_document')
-                await callback.message.answer_document(
-                    file,
-                    reply_markup=keyboards.back)
-    else:
+            await callback.message.answer_chat_action(
+                action='upload_document')
+            await callback.message.answer_document(
+                file,
+                reply_markup=keyboards.back)
+    except (TypeError, FileNotFoundError) as error:
         await callback.bot.answer_callback_query(callback.id)
+        logging.info('Planogram error: %s', error)
         await callback.message.answer(
             text='Файл не найден!',
             reply_markup=keyboards.back)

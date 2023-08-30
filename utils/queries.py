@@ -1,23 +1,18 @@
-NAME_QUERY = "SELECT DISTINCT name FROM planograms"
-
 INSERT_USER = "INSERT INTO users (username, ter_num, password, region, "\
               "position, grade, kas, citimanager) " \
               "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 
-INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (best_practice, user_id, "\
+INSERT_PRACTICE_MR = "INSERT INTO best_practice_mr (bp_id, username, "\
                      "kas, tg_id, datetime_added, desc, file_link) "\
                      "VALUES (?, ?, ?, ?, ?, ?, ?)"
 
 INSERT_PRACTICE = "INSERT INTO best_practice (region, name, desc, " \
                   "user_added, datetime_added, datetime_start, datetime_stop,"\
-                  " is_active, is_over, file_link) " \
-                  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                  " file_link) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
 
-BP_KAS = "UPDATE best_practice_mr SET kas_checked = ?, kas_approved = ? " \
-         "WHERE id = ?"
+BP_KAS = "UPDATE best_practice_mr SET kas_approved = ? WHERE id = ?"
 
-BP_CM = "UPDATE best_practice_mr SET cm_checked = ?, cm_approved = ?, " \
-        "is_active = ? WHERE id = ?"
+BP_CM = "UPDATE best_practice_mr SET cm_approved = ? WHERE id = ?"
 
 DELETE_BP = "DELETE FROM best_practice WHERE name = ?"
 
@@ -28,7 +23,8 @@ CM_TG_ID = "SELECT tg_id FROM users WHERE username = (SELECT citimanager " \
 
 GET_BP_PHOTOS = "SELECT * FROM best_practice_mr WHERE NOT EXISTS " \
                 "(SELECT id FROM best_practice_vote WHERE " \
-                "photo_id = best_practice_mr.id AND tg_id = ?)"
+                "photo_id = best_practice_mr.id AND tg_id = ?) " \
+                "AND is_active = True"
 
 VOTE_BP = "INSERT INTO best_practice_vote (tg_id, photo_id, is_voted) " \
           "VALUES (?, ?, ?)"
