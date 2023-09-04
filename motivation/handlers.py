@@ -28,15 +28,12 @@ async def get_current_mp(message: types.Message, state: FSMContext):
             table='mp'),
         position=await get_value_by_tgig(
             value='position',
-            table='users',
             tg_id=int(message.from_user.id)),
         region=await get_value_by_tgig(
             value='region',
-            table='users',
             tg_id=int(message.from_user.id)),
         is_active=True,
-        is_over=False
-    )
+        is_over=False)
     if data:
         await message.answer(
             text='Мотивационные Программы в вашем регионе:',
@@ -57,8 +54,7 @@ async def get_current_mp(message: types.Message, state: FSMContext):
                 text=f'<b>{i[1]}</b>\n\n'
                      f'<b>Дата начала:</b> {start}\n'
                      f'<b>Дата окончания:</b> {stop}\n',
-                reply_markup=keyboard
-            )
+                reply_markup=keyboard)
     else:
         await message.answer(
             text='На данный момент нет доступных Мотивационных Программ '
@@ -74,15 +70,12 @@ async def get_archive_mp(message: types.Message, state: FSMContext):
             table='mp'),
         position=await get_value_by_tgig(
             value='position',
-            table='users',
             tg_id=int(message.from_user.id)),
         region=await get_value_by_tgig(
             value='region',
-            table='users',
             tg_id=int(message.from_user.id)),
-        is_active=False,
-        is_over=True
-    )
+        is_active=True,
+        is_over=True)
     if data:
         await message.answer(
             text='Архивные Мотивационные Программы в вашем регионе:',

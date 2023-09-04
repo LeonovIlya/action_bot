@@ -21,15 +21,13 @@ DELETE_BP_MR = "DELETE FROM best_practice_mr WHERE id = ?"
 CM_TG_ID = "SELECT tg_id FROM users WHERE username = (SELECT citimanager " \
            "FROM users WHERE tg_id = ?)"
 
-GET_BP_PHOTOS = "SELECT * FROM best_practice_mr WHERE NOT EXISTS " \
-                "(SELECT id FROM best_practice_vote WHERE " \
-                "photo_id = best_practice_mr.id AND tg_id = ?) " \
-                "AND is_active = True"
-
 VOTE_BP = "INSERT INTO best_practice_vote (tg_id, photo_id, is_voted) " \
           "VALUES (?, ?, ?)"
 
 LIKES_UP = "UPDATE best_practice_mr SET likes = likes + 1 WHERE id = ?"
+
+TOP10 = "SELECT * FROM best_practice_mr WHERE bp_id = ? AND posted = True " \
+        "ORDER BY likes DESC LIMIT 10"
 
 
 async def update_value(table: str, column_name: str, where_name: str) -> str:

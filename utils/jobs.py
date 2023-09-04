@@ -4,6 +4,7 @@ import aiofiles
 from datetime import datetime as dt
 from aiopath import AsyncPath
 from aiogram import Dispatcher
+from typing import Union
 
 import config
 from loader import db
@@ -11,17 +12,13 @@ from utils import queries
 
 
 # функция проверки в бд по текущей дате
-async def check(name, is_active, column_name):
+async def check(name: str, column_name: str, **kwargs) -> Union[list, None]:
     try:
-        now = dt.now().date()
-        now = dt.strptime(str(now), '%Y-%m-%d')
         data = await db.get_all(
             await queries.get_value(
                 value='*',
                 table=name),
-            datetime_start=now,
-            is_active=is_active,
-            is_over=False)
+            **kwargs)
         if data:
             for i in data:
                 await db.post(
@@ -37,8 +34,13 @@ async def check(name, is_active, column_name):
         logging.info('Schedule error: %s', error)
 
 
+async def get_now() -> dt:
+    now = dt.now().date()
+    return dt.strptime(str(now), '%Y-%m-%d')
+
+
 # преобразование datetime в читаемый формат
-async def datetime_op(dt_start, dt_stop):
+async def datetime_op(dt_start: str , dt_stop: str) -> tuple:
     datetime_start = dt.strptime(str(dt_start), '%Y-%m-%d %H:%M:%S')
     datetime_stop = dt.strptime(str(dt_stop), '%Y-%m-%d %H:%M:%S')
     start = datetime_start.strftime('%d %B %Y')
@@ -46,9 +48,15 @@ async def datetime_op(dt_start, dt_stop):
     return start, stop
 
 
-# проверка на начала лучших практик
+# проверка на начало лучших практик
 async def check_bp_start(dp: Dispatcher):
-    data = await check('best_practice', False, 'is_active')
+    now = await get_now()
+    data = await check(
+        name='best_practice',
+        column_name='is_active',
+        datetime_start=now,
+        is_active=False,
+        is_over=False)
     if data:
         for i in data:
             start, stop = await datetime_op(i[6], i[7])
@@ -81,7 +89,13 @@ async def check_bp_start(dp: Dispatcher):
 
 # проверка на начало мотивационных программ
 async def check_mp_start(dp: Dispatcher):
-    data = await check('mp', False, 'is_active')
+    now = await get_now()
+    data = await check(
+        name='mp',
+        column_name='is_active',
+        datetime_start=now,
+        is_active=False,
+        is_over=False)
     if data:
         for i in data:
             start, stop = await datetime_op(i[4], i[5])
@@ -100,7 +114,13 @@ async def check_mp_start(dp: Dispatcher):
 
 # проверка на окончание лучших практик
 async def check_bp_stop(dp: Dispatcher):
-    data = await check('best_practice', True, 'is_over')
+    now = await get_now()
+    data = await check(
+        name='best_practice',
+        column_name='is_over',
+        datetime_stop=now,
+        is_active=True,
+        is_over=False)
     if data:
         for i in data:
             await dp.bot.send_message(
@@ -110,7 +130,13 @@ async def check_bp_stop(dp: Dispatcher):
 
 # проверка на окончание мотивационных программ
 async def check_mp_stop(dp: Dispatcher):
-    data = await check('mp', True, 'is_over')
+    now = await get_now()
+    data = await check(
+        name='mp',
+        column_name='is_over',
+        datetime_stop=now,
+        is_active=True,
+        is_over=False)
     if data:
         for i in data:
             await dp.bot.send_message(

@@ -14,22 +14,15 @@ async def get_result_rating(rating_name: str,
                             position: str,
                             select_name: str,
                             tg_id: int):
-    try:
-        return await db.get_one(
-            await queries.ratings_query(
-                column_name=rating_name,
-                position=position,
-                where_name=select_name,
-                where_value=await get_value_by_tgig(
-                    value=select_name,
-                    table='users',
-                    tg_id=tg_id
-                )),
-            tg_id=tg_id
-        )
-    except Exception as error:
-        logging.info(f'Error: {error}')
-        raise error
+    return await db.get_one(
+        await queries.ratings_query(
+            column_name=rating_name,
+            position=position,
+            where_name=select_name,
+            where_value=await get_value_by_tgig(
+                value=select_name,
+                tg_id=tg_id)),
+        tg_id=tg_id)
 
 
 async def ratings_menu(message: types.Message):
@@ -43,7 +36,6 @@ async def ratings_mr(message: types.Message, state: FSMContext):
     tg_id = int(message.from_user.id)
     position = await get_value_by_tgig(
         value='position',
-        table='users',
         tg_id=tg_id)
     match position:
         case 'mr':

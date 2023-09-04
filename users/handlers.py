@@ -9,12 +9,12 @@ from utils import decorators, keyboards, queries
 from utils.states import UserState
 
 
-async def get_value_by_tgig(value: str, table: str, tg_id: int)\
-        -> Union[str, bool]:
+async def get_value_by_tgig(value: str, tg_id: int)\
+        -> Union[bool, tuple, str]:
     result = await db.get_one(
         await queries.get_value(
             value=value,
-            table=table),
+            table='users'),
         tg_id=tg_id)
     if result is None:
         return False

@@ -86,6 +86,7 @@ vote_menu_cm = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Открыть голосование🟢')],
     [KeyboardButton(text='Закрыть голосование🛑')],
     [KeyboardButton(text='Получить ТОП-10🔟')],
+    [KeyboardButton(text='Отправить в архив🗃')],
     [KeyboardButton(text='Назад↩')]],
     resize_keyboard=True,
     one_time_keyboard=True)

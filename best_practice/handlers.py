@@ -46,17 +46,21 @@ async def practice_menu_cm(message: types.Message, state: FSMContext):
     await UserState.practice_menu_cm.set()
 
 
-@decorators.error_handler_message
-async def manage_practice(message: types.Message, state: FSMContext):
-    data = await db.get_all(
+# получаем список лучших практик с разными флагами
+async def get_bp(tg_id: int, **kwargs) -> list:
+    return await db.get_all(
         await queries.get_value(
             value='*',
             table='best_practice'),
         region=await get_value_by_tgig(
             value='region',
-            table='users',
-            tg_id=int(message.from_user.id)),
-        is_over=False)
+            tg_id=tg_id),
+        **kwargs)
+
+@decorators.error_handler_message
+async def manage_practice(message: types.Message, state: FSMContext):
+    data = await get_bp(tg_id=int(message.from_user.id),
+                        is_over=False)
     if data:
         await message.answer(
             text='Выберите практику для управления:',
@@ -169,8 +173,7 @@ async def manage_change_name(message: types.Message, state: FSMContext):
                     column_name='name',
                     where_name='name'),
                 new_name=name,
-                old_name=data['bp_name']
-            )
+                old_name=data['bp_name'])
             await message.answer(text='Название успешно изменено!')
 
 
@@ -184,8 +187,7 @@ async def manage_change_desc(message: types.Message, state: FSMContext):
             column_name='desc',
             where_name='name'),
         desc=str(message.text),
-        name=data['bp_name']
-    )
+        name=data['bp_name'])
     await message.answer(text='Описание успешно изменено!')
 
 
@@ -260,16 +262,9 @@ async def manage_change_stop(message: types.Message, state: FSMContext):
 
 @decorators.error_handler_message
 async def get_current_practice(message: types.Message, state: FSMContext):
-    data = await db.get_all(
-        await queries.get_value(
-            value='*',
-            table='best_practice'),
-        region=await get_value_by_tgig(
-            value='region',
-            table='users',
-            tg_id=int(message.from_user.id)),
-        is_active=True,
-        is_over=False)
+    data = await get_bp(tg_id=int(message.from_user.id),
+                        is_active=True,
+                        is_over=False)
     if data:
         await message.answer(
             text='Практики вашего региона, доступные для участия на данный '
@@ -348,18 +343,12 @@ async def take_part_take_photo(message: types.Message, state: FSMContext):
     await UserState.practice_take_part_mr_desc.set()
 
 
-
 @decorators.error_handler_message
 async def take_part_take_description(message: types.Message,
                                      state: FSMContext):
     data = await state.get_data()
-    username = await get_value_by_tgig(
-        value='username',
-        table='users',
-        tg_id=int(message.from_user.id))
-    kas = await get_value_by_tgig(
-        value='kas',
-        table='users',
+    user = await get_value_by_tgig(
+        value='username, kas',
         tg_id=int(message.from_user.id))
     kas_tg_id = await db.get_one(
         await queries.get_value(
@@ -368,12 +357,11 @@ async def take_part_take_description(message: types.Message,
         position='kas',
         username=await get_value_by_tgig(
             value='kas',
-            table='users',
             tg_id=int(message.from_user.id)))
     await db.post(queries.INSERT_PRACTICE_MR,
                   bp_id=str(data['bp_id']),
-                  username=username,
-                  kas=kas,
+                  username=user[0],
+                  kas=user[1],
                   tg_id=int(message.from_user.id),
                   datetime_added=dt.now(),
                   desc=str(message.text),
@@ -478,8 +466,7 @@ async def add_new_practice_add_picture(message: types.Message,
 async def add_new_practice(message: types.Message, state: FSMContext):
     data = await state.get_data()
     user = await get_value_by_tgig(
-        value='*',
-        table='users',
+        value='username, region',
         tg_id=int(message.from_user.id))
     max_id = await db.get_one(
         await queries.get_value(
@@ -493,10 +480,10 @@ async def add_new_practice(message: types.Message, state: FSMContext):
         make_dirs=True)
     await db.post(
         queries.INSERT_PRACTICE,
-        region=user[5],
+        region=user[1],
         name=data['name'],
         desc=data['desc'],
-        user_added=user[1],
+        user_added=user[0],
         datetime_added=dt.now(),
         datetime_start=data['date_start'],
         datetime_stop=data['date_stop'],
@@ -509,16 +496,9 @@ async def add_new_practice(message: types.Message, state: FSMContext):
 # просмотр заявок для модерации супервайзером
 @decorators.error_handler_message
 async def practice_requests_kas(message: types.Message, state: FSMContext):
-    data = await db.get_all(
-        await queries.get_value(
-            value='*',
-            table='best_practice'),
-        region=await get_value_by_tgig(
-            value='region',
-            table='users',
-            tg_id=int(message.from_user.id)),
-        is_active=True,
-        is_v_active=False)
+    data = await get_bp(tg_id=int(message.from_user.id),
+                        is_active=True,
+                        is_v_active=False)
     if data:
         await message.answer(
             text='Практики, доступные на данный момент:',
@@ -554,7 +534,6 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
                 position='cm',
                 username = await get_value_by_tgig(
                     value='citimanager',
-                    table='users',
                     tg_id=int(callback.from_user.id)))
             await db.post(
                 queries.BP_KAS,
@@ -637,7 +616,6 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
         case _:
             kas = await get_value_by_tgig(
                 value='username',
-                table='users',
                 tg_id=int(callback.from_user.id))
             bp_mr = await db.get_one(
                 await queries.get_value(
@@ -670,16 +648,9 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
 # просмотр заявок для модерации ситименджером
 @decorators.error_handler_message
 async def practice_requests_cm(message: types.Message, state: FSMContext):
-    data = await db.get_all(
-        await queries.get_value(
-            value='*',
-            table='best_practice'),
-        region=await get_value_by_tgig(
-            value='region',
-            table='users',
-            tg_id=int(message.from_user.id)),
-        is_active=True,
-        is_v_active=False)
+    data = await get_bp(tg_id=int(message.from_user.id),
+                        is_active=True,
+                        is_v_active=False)
     if data:
         await message.answer(
             text='Практики, доступные на данный момент:',
@@ -827,18 +798,11 @@ async def practice_vote_menu_cm(message: types.Message, state: FSMContext):
 # обработка нажатия открыть голосование
 @decorators.error_handler_message
 async def practice_start_voting(message: types.Message, state: FSMContext):
-    data = await db.get_all(
-        await queries.get_value(
-            value='*',
-            table='best_practice'),
-        region=await get_value_by_tgig(
-            value='region',
-            table='users',
-            tg_id=int(message.from_user.id)),
-        is_active=True,
-        is_over=True,
-        is_v_active=False,
-        is_v_over=False)
+    data = await get_bp(tg_id=int(message.from_user.id),
+                        is_active=True,
+                        is_over=True,
+                        is_v_active=False,
+                        is_v_over=False)
     if data:
         await message.answer(
             text='Выберите практику для старта голосования:\n'
@@ -939,18 +903,11 @@ async def practice_start_voting_send(callback: types.CallbackQuery,
 # обработка нажатия закрыть голосование
 @decorators.error_handler_message
 async def practice_stop_voting(message: types.Message, state: FSMContext):
-    data = await db.get_all(
-        await queries.get_value(
-            value='*',
-            table='best_practice'),
-        region=await get_value_by_tgig(
-            value='region',
-            table='users',
-            tg_id=int(message.from_user.id)),
-        is_active=True,
-        is_over=True,
-        is_v_active=True,
-        is_v_over=False)
+    data = await get_bp(tg_id=int(message.from_user.id),
+                        is_active=True,
+                        is_over=True,
+                        is_v_active=True,
+                        is_v_over=False)
     if data:
         await message.answer(
             text='Выберите практику для остановки голосования:',
@@ -1007,9 +964,111 @@ async def practice_stop_voting_send(callback: types.CallbackQuery,
         reply_markup=keyboards.back)
 
 
-# обработка нажатиян кнопки получить топ10
+# обработка нажатия кнопки получить топ10
+@decorators.error_handler_message
 async def practice_get_top(message: types.Message, state: FSMContext):
-    pass
+    data = await get_bp(tg_id=int(message.from_user.id),
+                        is_active=True,
+                        is_over=True,
+                        is_v_active=True,
+                        is_v_over=True,
+                        is_archive=False)
+    if data:
+        await message.answer(
+            text='Выберите практику для получения ТОП-10:',
+            reply_markup=keyboards.back)
+        for i in data:
+            keyboard = InlineKeyboardMarkup()
+            keyboard.insert(
+                InlineKeyboardButton('ТОП-10',
+                                     callback_data=f'top10_{i[0]}'))
+            file = AsyncPath(str(i[8]))
+            if await file.is_file():
+                async with aiofiles.open(file, 'rb') as photo:
+                    await message.answer_photo(
+                        photo=photo,
+                        caption=f'<b>{str(i[2])}</b>',
+                        reply_markup=keyboard)
+            else:
+                await message.answer(
+                    text=f'<b>{str(i[2])}</b>',
+                    reply_markup=keyboard)
+            await UserState.practice_get_top.set()
+    else:
+        await message.answer(
+            text='Практики, в которых закончены голосования не найдены!',
+            reply_markup=keyboards.back)
+
+
+# отправка топ-10 по лайкам
+@decorators.error_handler_callback
+async def practice_get_top_send(callback: types.CallbackQuery,
+                                state: FSMContext):
+    bp_id = str(callback.data).split('_')[1]
+    data = await db.get_all(
+        queries.TOP10,
+        bp_id)
+    if data:
+        for i in data:
+            file = AsyncPath(str(i[7]))
+            async with aiofiles.open(file, 'rb') as photo:
+                await callback.message.answer_photo(
+                    photo=photo,
+                    caption=f'<b>ФИО:</b> {str(i[2])}\n\n'
+                            f'<b>Лайки:</b> {str(i[8])}')
+    else:
+        await callback.message.answer(
+            text='Заявки не найдены!',
+            reply_markup=keyboards.back)
+
+
+@decorators.error_handler_message
+async def practice_to_archive(message: types.Message, state: FSMContext):
+    data = await get_bp(tg_id=int(message.from_user.id),
+                        is_active=True,
+                        is_over=True,
+                        is_v_active=True,
+                        is_v_over=True,
+                        is_archive=False)
+    if data:
+        await message.answer(
+            text='Выберите практику для добавления в архив:',
+            reply_markup=keyboards.back)
+        for i in data:
+            keyboard = InlineKeyboardMarkup()
+            keyboard.insert(
+                InlineKeyboardButton('В АРХИВ!',
+                                     callback_data=f'archive_{i[0]}'))
+            file = AsyncPath(str(i[8]))
+            if await file.is_file():
+                async with aiofiles.open(file, 'rb') as photo:
+                    await message.answer_photo(
+                        photo=photo,
+                        caption=f'<b>{str(i[2])}</b>',
+                        reply_markup=keyboard)
+            else:
+                await message.answer(
+                    text=f'<b>{str(i[2])}</b>',
+                    reply_markup=keyboard)
+            await UserState.practice_to_archive.set()
+    else:
+        await message.answer(
+            text='Нет практик для добавления в архив!',
+            reply_markup=keyboards.back)
+
+
+#@decorators.error_handler_callback
+async def practice_to_archive_send(callback: types.CallbackQuery,
+                                state: FSMContext):
+    bp_id = str(callback.data).split('_')[1]
+    await db.post(
+       await queries.update_value(
+           table='best_practice',
+           column_name='is_archive',
+           where_name='id'),
+        is_archive=True,
+        id=bp_id)
+    await callback.message.answer(text='Отправлено в архив!')
 
 
 # обработчка нажатия кнопки предложения
@@ -1022,7 +1081,6 @@ async def make_suggest(message: types.Message, state: FSMContext):
         reply_markup=keyboards.back)
     position = await get_value_by_tgig(
         value='position',
-        table='users',
         tg_id=int(message.from_user.id))
     match position:
         case 'mr':
@@ -1037,7 +1095,6 @@ async def send_suggest(message: types.Message, state: FSMContext):
     text_to_send = str(message.text)
     user = await get_value_by_tgig(
         value='username',
-        table='users',
         tg_id=int(message.from_user.id))
     cm_tg_id = await db.get_one(
         queries.CM_TG_ID,
@@ -1117,6 +1174,8 @@ def register_handlers_best_practice(dp: Dispatcher):
                UserState.practice_start_voting,
                UserState.practice_stop_voting,
                UserState.practice_top_voting,
+               UserState.practice_get_top,
+               UserState.practice_to_archive,
                UserState.practice_add,
                UserState.practice_add_desc,
                UserState.practice_add_start,
@@ -1239,7 +1298,22 @@ def register_handlers_best_practice(dp: Dispatcher):
     dp.register_callback_query_handler(
         practice_stop_voting_send,
         state=UserState.practice_stop_voting)
-
+    dp.register_message_handler(
+        practice_get_top,
+        text='Получить ТОП-10🔟',
+        state=UserState.practice_vote_menu_cm)
+    dp.register_callback_query_handler(
+        practice_get_top_send,
+        text_startswith='top10_',
+        state=UserState.practice_get_top)
+    dp.register_message_handler(
+        practice_to_archive,
+        text='Отправить в архив🗃',
+        state=UserState.practice_vote_menu_cm)
+    dp.register_callback_query_handler(
+        practice_to_archive_send,
+        text_startswith='archive_',
+        state=UserState.practice_to_archive)
     dp.register_callback_query_handler(
         get_like,
         text_startswith='bp_vote_')

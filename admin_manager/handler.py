@@ -168,8 +168,7 @@ async def admin_add_cm(message: types.Message, state: FSMContext):
         position=data['position'],
         grade=data['grade'],
         kas=data['kas'],
-        citimanager=data['citimanager']
-    )
+        citimanager=data['citimanager'])
     await message.answer(text=f'Новый пользователь успешно добавлен!\n\n'
                               f'ФИО: {data["username"]}\n'
                               f'Территория: {data["ter_num"]}\n'
@@ -220,6 +219,7 @@ async def admin_edit_user_set(message: types.Message, state: FSMContext):
     await message.answer(text='Данные успешно обновлены!',
                          reply_markup=keyboards.back)
 
+
 # информация пользователя из базы по территории, спрашиваем территорию
 async def admin_show_info(message: types.Message):
     await message.answer(text='Введите номер территории:',
@@ -235,8 +235,7 @@ async def admin_get_info(message: types.Message, state: FSMContext):
     info = await db.get_one(
         await queries.get_value(
             value='*',
-            table='users'
-        ),
+            table='users'),
         ter_num=ter_num)
     if info:
         await message.answer(

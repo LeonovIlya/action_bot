@@ -27,7 +27,6 @@ async def profile_menu_cm(message: types.Message):
 async def my_profile(message: types.Message, state: FSMContext):
     data = await get_value_by_tgig(
         value='*',
-        table='users',
         tg_id=int(message.from_user.id))
     match data[6]:
         case 'mr':
@@ -98,7 +97,6 @@ async def send_comments(message: types.Message, state: FSMContext):
     text_to_send = str(message.text)
     user = await get_value_by_tgig(
         value='username',
-        table='users',
         tg_id=int(message.from_user.id))
     cm_tg_id = await db.get_one(
         queries.CM_TG_ID,

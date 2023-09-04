@@ -75,6 +75,9 @@ class UserState(StatesGroup):
     practice_stop_voting = State()
     practice_top_voting = State()
 
+    practice_get_top = State()
+    practice_to_archive = State()
+
     practice_make_suggest_mr = State()
     practice_make_suggest_kas = State()
 
