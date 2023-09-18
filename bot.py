@@ -13,7 +13,7 @@ from shop.handlers import register_handlers_shop
 from tools.handlers import register_handlers_tools
 from users.handlers import register_handlers_users
 from utils.jobs import check_bp_start, check_bp_stop, check_mp_start, \
-    check_mp_stop, clear_logs#, check_redis
+    check_mp_stop, clear_logs, check_redis
 
 
 logger = logging.getLogger('bot')
@@ -28,25 +28,29 @@ logging.basicConfig(filename=config.LOG_FILE,
 
 def set_scheduled_jobs():
     scheduler.add_job(func=check_bp_stop,
-                      trigger='interval',
-                      seconds=10,
-                      args=(dp,))
-    scheduler.add_job(func=check_bp_start,
-                      trigger='interval',
-                      seconds=10,
-                      args=(dp,))
-    scheduler.add_job(func=check_mp_start,
-                      trigger='interval',
-                      seconds=10,
+                      trigger='cron',
+                      hour=0,
+                      minute=1,
                       args=(dp,))
     scheduler.add_job(func=check_mp_stop,
-                      trigger='interval',
-                      seconds=10,
+                      trigger='cron',
+                      hour=0,
+                      minute=1,
                       args=(dp,))
-    # scheduler.add_job(func=check_redis,
-    #                   trigger='interval',
-    #                   minutes=1,
-    #                   args=(dp,))
+    scheduler.add_job(func=check_bp_start,
+                      trigger='cron',
+                      hour=0,
+                      minute=2,
+                      args=(dp,))
+    scheduler.add_job(func=check_mp_start,
+                      trigger='cron',
+                      hour=0,
+                      minute=2,
+                      args=(dp,))
+    scheduler.add_job(func=check_redis,
+                      trigger='interval',
+                      minutes=1,
+                      args=(dp,))
     scheduler.add_job(func=clear_logs,
                       trigger='interval',
                       days=30,

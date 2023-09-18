@@ -27,7 +27,6 @@ async def get_value_by_tgig(value: str, tg_id: int)\
 async def start_menu_and_state(message: types.Message, state: FSMContext):
     position = await get_value_by_tgig(
         value='position',
-        table='users',
         tg_id=int(message.from_user.id))
     await state.reset_state()
     await state.reset_data()
@@ -59,9 +58,7 @@ async def start_menu_and_state(message: types.Message, state: FSMContext):
 async def start_no_auth(message: types.Message, state: FSMContext):
     auth = await get_value_by_tgig(
         value='tg_id',
-        table='users',
-        tg_id=int(message.from_user.id)
-    )
+        tg_id=int(message.from_user.id))
     if auth:
         await start_menu_and_state(message, state)
     else:

@@ -34,10 +34,6 @@ async def update_value(table: str, column_name: str, where_name: str) -> str:
     return f"UPDATE {table} SET {column_name} = ? WHERE {where_name} = ?"
 
 
-async def count(scope: str) -> str:
-    return f"SELECT COUNT(*) FROM users WHERE {scope} = ?"
-
-
 async def get_value(value: str, table: str) -> str:
     return f"SELECT {value} FROM {table}"
 

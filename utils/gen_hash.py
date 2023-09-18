@@ -12,6 +12,6 @@ import openpyxl
 #book.save('users.xlsx')
 
 
-pwd = 'test1234'
+pwd = ''
 result = hashlib.sha512(pwd.encode('utf-8')).hexdigest()
 print(result)

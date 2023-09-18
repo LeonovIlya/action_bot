@@ -72,19 +72,12 @@ async def manage_practice(message: types.Message, state: FSMContext):
                 InlineKeyboardButton('Управлять',
                                      callback_data=f'{i[2]}'))
             file = AsyncPath(str(i[8]))
-            if await file.is_file():
-                async with aiofiles.open(file, 'rb') as photo:
-                    await message.answer_photo(
-                        photo=photo,
-                        caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}\n\n'
-                                f'<b>Дата начала:</b>\n{str(start)}\n\n'
-                                f'<b>Дата окончания:</b>\n{str(stop)}',
-                        reply_markup=keyboard)
-            else:
-                await message.answer(
-                    text=f'<b>{str(i[2])}</b>\n\n{str(i[3])}\n\n'
-                         f'<b>Дата начала:</b>\n{str(start)}\n\n'
-                         f'<b>Дата окончания:</b>\n{str(stop)}',
+            async with aiofiles.open(file, 'rb') as photo:
+                await message.answer_photo(
+                    photo=photo,
+                    caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}\n\n'
+                            f'<b>Дата начала:</b>\n{str(start)}\n\n'
+                            f'<b>Дата окончания:</b>\n{str(stop)}',
                     reply_markup=keyboard)
             await UserState.practice_manage_cm.set()
     else:
@@ -277,19 +270,12 @@ async def get_current_practice(message: types.Message, state: FSMContext):
                 InlineKeyboardButton('Участвовать!📨',
                                      callback_data=f'{i[2]}'))
             file = AsyncPath(str(i[8]))
-            if await file.is_file():
-                async with aiofiles.open(file, 'rb') as photo:
-                    await message.answer_photo(
-                        photo=photo,
-                        caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}\n\n'
-                                f'<b>Дата начала:</b>\n{str(start)}\n\n'
-                                f'<b>Дата окончания:</b>\n{str(stop)}',
-                        reply_markup=inline_keyboard)
-            else:
-                await message.answer(
-                    f'{str(i[2])}</b>\n\n{str(i[3])}\n\n'
-                    f'<b>Дата начала:</b>\n{str(start)}\n\n'
-                    f'<b>Дата окончания:</b>\n{str(stop)}',
+            async with aiofiles.open(file, 'rb') as photo:
+                await message.answer_photo(
+                    photo=photo,
+                    caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}\n\n'
+                            f'<b>Дата начала:</b>\n{str(start)}\n\n'
+                            f'<b>Дата окончания:</b>\n{str(stop)}',
                     reply_markup=inline_keyboard)
     else:
         await message.answer(
@@ -331,7 +317,7 @@ async def take_part_take_photo(message: types.Message, state: FSMContext):
             table='best_practice'),
         name=str(data['bp_name']))
     destination = f'./files/best_practice/{int(bp_id[0])}/' \
-                  f'{uuid.uuid1()}.jpg '
+                  f'{uuid.uuid1()}.jpg'
     await state.update_data(destination=destination)
     await state.update_data(bp_id=bp_id[0])
     await message.photo[-1].download(
@@ -562,13 +548,12 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
                 await state.update_data(bp_mr_id=bp_mr[0])
                 await state.update_data(mr_tg_id=bp_mr[4])
                 file = AsyncPath(str(bp_mr[7]))
-                if await file.is_file():
-                    with open(file, 'rb') as photo:
-                        await callback.message.edit_media(
-                            media=InputMediaPhoto(
-                                media=photo,
-                                caption=bp_mr[6]),
-                            reply_markup=keyboards.accept_keyboard)
+                async with aiofiles.open(file, 'rb') as photo:
+                    await callback.message.edit_media(
+                        media=InputMediaPhoto(
+                            media=photo.raw,
+                            caption=bp_mr[6]),
+                        reply_markup=keyboards.accept_keyboard)
             else:
                 await callback.message.answer(
                     text='Больше нет заявок для модерации!')
@@ -602,13 +587,12 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
                 await state.update_data(bp_mr_id=bp_mr[0])
                 await state.update_data(mr_tg_id=bp_mr[4])
                 file = AsyncPath(str(bp_mr[7]))
-                if await file.is_file():
-                    with open(file, 'rb') as photo:
-                        await callback.message.edit_media(
-                            media=InputMediaPhoto(
-                                media=photo,
-                                caption=bp_mr[6]),
-                            reply_markup=keyboards.accept_keyboard)
+                async with aiofiles.open(file, 'rb') as photo:
+                    await callback.message.edit_media(
+                        media=InputMediaPhoto(
+                            media=photo.raw,
+                            caption=bp_mr[6]),
+                        reply_markup=keyboards.accept_keyboard)
             else:
                 await callback.message.answer(
                     text='Больше нет заявок для модерации!')
@@ -632,12 +616,11 @@ async def practice_requests_show_kas(callback: types.CallbackQuery,
                 await state.update_data(mr_tg_id=bp_mr[4])
                 await state.update_data(kas=kas)
                 file = AsyncPath(str(bp_mr[7]))
-                if await file.is_file():
-                    async with aiofiles.open(file, 'rb') as photo:
-                        await callback.message.answer_photo(
-                            photo=photo,
-                            caption=bp_mr[6],
-                            reply_markup=keyboards.accept_keyboard)
+                async with aiofiles.open(file, 'rb') as photo:
+                    await callback.message.answer_photo(
+                        photo=photo,
+                        caption=bp_mr[6],
+                        reply_markup=keyboards.accept_keyboard)
             else:
                 await callback.answer(
                     text='Нет заявок для модерации!',
@@ -690,41 +673,48 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
                 chat_id=data['mr_tg_id'],
                 text='✅ Ваша заявка на участие в Лучшей Практике принята'
                      ' СитиМенеджером!')
-            await callback.bot.send_message(
-                chat_id=config.CHANNEL_ID,
-                text='Новая заявка для участия в Лучшей Практике')
-            await callback.bot.send_photo(
-                chat_id=config.CHANNEL_ID,
-                photo=data['bp_mr_photo'],
-                caption=data['bp_desc'])
+            file_channel = AsyncPath(str(data['bp_mr_photo']))
+            async with aiofiles.open(file_channel, 'rb') as photo:
+                await callback.bot.send_photo(
+                    chat_id=config.CHANNEL_ID,
+                    photo=photo,
+                    caption=f'Новая заявка для участия в Лучшей '
+                            f'Практике!\n\n'
+                            f'"{data["bp_desc"]}"')
             await asyncio.sleep(0.1)
             bp_mr = await db.get_one(
                 await queries.get_value(
                     value='*',
                     table='best_practice_mr'),
-                best_practice=data['bp_name'],
+                bp_id=data['bp_id'],
                 kas_approved=True,
                 cm_approved=False)
             if bp_mr:
-                await state.update_data(bp_id=bp_mr[0])
+                await state.update_data(bp_mr_id=bp_mr[0])
                 await state.update_data(mr_tg_id=bp_mr[4])
                 await state.update_data(bp_mr_photo=bp_mr[7])
                 await state.update_data(bp_desc=bp_mr[6])
                 file = AsyncPath(str(bp_mr[7]))
-                if await file.is_file():
-                    with open(file, 'rb') as photo:
-                        await callback.message.edit_media(
-                            media=InputMediaPhoto(
-                                media=photo,
-                                caption=bp_mr[6]),
-                            reply_markup=keyboards.accept_keyboard)
+                async with aiofiles.open(file, 'rb') as photo:
+                    await callback.message.edit_media(
+                        media=InputMediaPhoto(
+                            media=photo.raw,
+                            caption=bp_mr[6]),
+                        reply_markup=keyboards.accept_keyboard)
             else:
                 await callback.message.answer(
                     text='Больше нет заявок для модерации!')
                 await callback.message.delete()
         case 'Decline':
-            await db.post(queries.DELETE_BP_MR,
-                          id=data['bp_id'])
+            file_path = await db.get_one(
+                await queries.get_value(
+                    value='file_link',
+                    table='best_practice_mr'),
+                id=data['bp_mr_id'])
+            await aios.remove(file_path[0])
+            await db.post(
+                queries.DELETE_BP_MR,
+                id=data['bp_mr_id'])
             await callback.answer(
                 text='Заявка отклонена!',
                 show_alert=False)
@@ -737,22 +727,21 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
                 await queries.get_value(
                     value='*',
                     table='best_practice_mr'),
-                best_practice=data['bp_name'],
+                bp_id=data['bp_id'],
                 kas_approved=True,
                 cm_approved=False)
             if bp_mr:
-                await state.update_data(bp_id=bp_mr[0])
+                await state.update_data(bp_mr_id=bp_mr[0])
                 await state.update_data(mr_tg_id=bp_mr[4])
                 await state.update_data(bp_mr_photo=bp_mr[7])
                 await state.update_data(bp_desc=bp_mr[6])
                 file = AsyncPath(str(bp_mr[7]))
-                if await file.is_file():
-                    with open(file, 'rb') as photo:
-                        await callback.message.edit_media(
-                            media=InputMediaPhoto(
-                                media=photo,
-                                caption=bp_mr[6]),
-                            reply_markup=keyboards.accept_keyboard)
+                async with aiofiles.open(file, 'rb') as photo:
+                    await callback.message.edit_media(
+                        media=InputMediaPhoto(
+                            media=photo.raw,
+                            caption=bp_mr[6]),
+                        reply_markup=keyboards.accept_keyboard)
             else:
                 await callback.message.answer(
                     text='Больше нет заявок для модерации!')
@@ -762,24 +751,23 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
                 await queries.get_value(
                     value='*',
                     table='best_practice_mr'),
-                best_practice=str(callback.data),
+                bp_id=data['bp_id'],
                 kas_approved=True,
                 cm_approved=False)
             if bp_mr:
                 await callback.message.delete()
                 await callback.message.answer_chat_action(
                     action='upload_photo')
-                await state.update_data(bp_id=bp_mr[0])
+                await state.update_data(bp_mr_id=bp_mr[0])
                 await state.update_data(mr_tg_id=bp_mr[4])
                 await state.update_data(bp_mr_photo=bp_mr[7])
                 await state.update_data(bp_desc=bp_mr[6])
                 file = AsyncPath(str(bp_mr[7]))
-                if await file.is_file():
-                    async with aiofiles.open(file, 'rb') as photo:
-                        await callback.message.answer_photo(
-                            photo=photo,
-                            caption=bp_mr[6],
-                            reply_markup=keyboards.accept_keyboard)
+                async with aiofiles.open(file, 'rb') as photo:
+                    await callback.message.answer_photo(
+                        photo=photo,
+                        caption=bp_mr[6],
+                        reply_markup=keyboards.accept_keyboard)
             else:
                 await callback.answer(
                     text='Нет заявок для модерации!',
@@ -815,15 +803,10 @@ async def practice_start_voting(message: types.Message, state: FSMContext):
                 InlineKeyboardButton('Начать голосование',
                                      callback_data=f'{i[0]}'))
             file = AsyncPath(str(i[8]))
-            if await file.is_file():
-                async with aiofiles.open(file, 'rb') as photo:
-                    await message.answer_photo(
-                        photo=photo,
-                        caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
-                        reply_markup=keyboard)
-            else:
-                await message.answer(
-                    text=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
+            async with aiofiles.open(file, 'rb') as photo:
+                await message.answer_photo(
+                    photo=photo,
+                    caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
                     reply_markup=keyboard)
         await UserState.practice_start_voting.set()
     else:
@@ -863,8 +846,8 @@ async def practice_start_voting_send(callback: types.CallbackQuery,
             id=bp_id)
         await callback.bot.send_message(
             chat_id=config.CHANNEL_ID,
-            text=f'Началось голосование за участников Лучшей Практики <b>'
-                 f'{bp_name[0]}</b>!')
+            text=f'Началось голосование за участников Лучшей Практики'
+                 f' <b>{bp_name[0]}</b>!')
         await asyncio.sleep(1)
         for i in photos:
             vote_keyboard = InlineKeyboardMarkup()
@@ -872,19 +855,13 @@ async def practice_start_voting_send(callback: types.CallbackQuery,
                 InlineKeyboardButton('Поставить Лайк 👍🏻',
                                      callback_data=f'bp_vote_{i[0]}'))
             file = AsyncPath(str(i[7]))
-            if await file.is_file():
-                async with aiofiles.open(file, 'rb') as photo:
-                    await callback.bot.send_photo(
-                        chat_id=config.CHANNEL_ID,
-                        photo=photo,
-                        caption=i[6],
-                        reply_markup=vote_keyboard)
-                    await asyncio.sleep(0.1)
-            else:
-                await callback.bot.send_message(
+            async with aiofiles.open(file, 'rb') as photo:
+                await callback.bot.send_photo(
                     chat_id=config.CHANNEL_ID,
-                    text=f'<b>{i[6]}')
-                await asyncio.sleep(0.1)
+                    photo=photo,
+                    caption=i[6],
+                    reply_markup=vote_keyboard)
+            await asyncio.sleep(0.1)
             await db.post(
                 await queries.update_value(
                     table='best_practice_mr',
@@ -918,15 +895,10 @@ async def practice_stop_voting(message: types.Message, state: FSMContext):
                 InlineKeyboardButton('Остановить голосование',
                                      callback_data=f'{i[0]}'))
             file = AsyncPath(str(i[8]))
-            if await file.is_file():
-                async with aiofiles.open(file, 'rb') as photo:
-                    await message.answer_photo(
-                        photo=photo,
-                        caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
-                        reply_markup=keyboard)
-            else:
-                await message.answer(
-                    text=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
+            async with aiofiles.open(file, 'rb') as photo:
+                await message.answer_photo(
+                    photo=photo,
+                    caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
                     reply_markup=keyboard)
         await UserState.practice_stop_voting.set()
     else:
@@ -983,15 +955,10 @@ async def practice_get_top(message: types.Message, state: FSMContext):
                 InlineKeyboardButton('ТОП-10',
                                      callback_data=f'top10_{i[0]}'))
             file = AsyncPath(str(i[8]))
-            if await file.is_file():
-                async with aiofiles.open(file, 'rb') as photo:
-                    await message.answer_photo(
-                        photo=photo,
-                        caption=f'<b>{str(i[2])}</b>',
-                        reply_markup=keyboard)
-            else:
-                await message.answer(
-                    text=f'<b>{str(i[2])}</b>',
+            async with aiofiles.open(file, 'rb') as photo:
+                await message.answer_photo(
+                    photo=photo,
+                    caption=f'<b>{str(i[2])}</b>',
                     reply_markup=keyboard)
             await UserState.practice_get_top.set()
     else:
@@ -1040,15 +1007,10 @@ async def practice_to_archive(message: types.Message, state: FSMContext):
                 InlineKeyboardButton('В АРХИВ!',
                                      callback_data=f'archive_{i[0]}'))
             file = AsyncPath(str(i[8]))
-            if await file.is_file():
-                async with aiofiles.open(file, 'rb') as photo:
-                    await message.answer_photo(
-                        photo=photo,
-                        caption=f'<b>{str(i[2])}</b>',
-                        reply_markup=keyboard)
-            else:
-                await message.answer(
-                    text=f'<b>{str(i[2])}</b>',
+            async with aiofiles.open(file, 'rb') as photo:
+                await message.answer_photo(
+                    photo=photo,
+                    caption=f'<b>{str(i[2])}</b>',
                     reply_markup=keyboard)
             await UserState.practice_to_archive.set()
     else:

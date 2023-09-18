@@ -147,18 +147,18 @@ async def check_mp_stop(dp: Dispatcher):
 
 
 # проверка работы редиса
-# async def check_redis(dp: Dispatcher):
-#     r = redis.Redis(host=config.REDIS_HOST,
-#                     password=config.REDIS_PASSWORD,
-#                     socket_connect_timeout=1)
-#     try:
-#         r.ping()
-#         logging.info('Checking redis connection - OK')
-#     except (redis.exceptions.ConnectionError,
-#             redis.exceptions.TimeoutError):
-#         await dp.bot.send_message(
-#             chat_id=config.ADMIN_ID,
-#             text='‼REDIS УПАЛ‼')
+async def check_redis(dp: Dispatcher):
+    r = redis.Redis(host=config.REDIS_HOST,
+                    password=config.REDIS_PASSWORD,
+                    socket_connect_timeout=1)
+    try:
+        r.ping()
+        logging.info('Checking redis connection - OK')
+    except (redis.exceptions.ConnectionError,
+            redis.exceptions.TimeoutError):
+        await dp.bot.send_message(
+            chat_id=config.ADMIN_ID,
+            text='‼REDIS УПАЛ‼')
 
 
 # очистка лог-файла
