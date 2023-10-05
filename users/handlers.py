@@ -139,5 +139,7 @@ def register_handlers_users(dp: Dispatcher):
         state=UserState.start_auth_get_password)
     dp.register_message_handler(
         start_menu_and_state,
-        text='Главное меню📱',
+        text=('Главное меню📱',
+              'Главное меню',
+              'главное меню'),
         state='*')

@@ -1,6 +1,7 @@
 import re
 import aiofiles
 
+from datetime import datetime as dt
 from aiopath import AsyncPath
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
@@ -21,6 +22,10 @@ async def kpi_menu(message: types.Message):
     await UserState.kpi_menu.set()
 
 
+async def convert_datetime(value: str):
+    return dt.strptime(value, '%Y-%m-%d %H:%M:%S').strftime('%d %B %Y')
+
+
 @decorators.error_handler_message
 async def kpi_mr(message: types.Message, state: FSMContext):
     query = await db.get_one(
@@ -28,6 +33,7 @@ async def kpi_mr(message: types.Message, state: FSMContext):
             value='*',
             table='users'),
         tg_id=int(message.from_user.id))
+    up_date = await convert_datetime(query[24])
     await message.answer(
         text=f'```\n'
              f'        план|    факт|результат\n'
@@ -39,8 +45,8 @@ async def kpi_mr(message: types.Message, state: FSMContext):
              f'{query[17]:>8}|{query[18]:>8}|{query[19]:>8.2%}\n'
              f'{KPI[3]:<7}'
              f'{query[20]:>5}|{query[21]:>8}|{query[22]:>8.2%}\n'
-             f'{KPI[4]:<7}{query[23]:>22}\n'
-             f'```',
+             f'{KPI[4]:<7}{query[23]:>22}'
+             f'\n\nАктуальность данных:\n{up_date}```',
         reply_markup=keyboards.back,
         parse_mode='MarkdownV2')
 
@@ -63,14 +69,15 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
             tt_num=tt_num)
         if query:
             address = re.sub(R_STR, '', query[4])
-            address = address\
-                .replace("_", "\\_")\
-                .replace(".", "\\.")\
-                .replace("-", "\\-")\
-                .replace("*", "\\*")\
-                .replace("@", "\\@")\
+            address = address \
+                .replace("_", "\\_") \
+                .replace(".", "\\.") \
+                .replace("-", "\\-") \
+                .replace("*", "\\*") \
+                .replace("@", "\\@") \
                 .replace("&", "\\&")
             mr = query[5].replace("_", "\\_")
+            up_date = await convert_datetime(query[24])
             await message.answer(
                 text=f'*TT №* {tt_num}\n'
                      f'*Сеть:* {query[3]}\n'
@@ -87,8 +94,8 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
                      f'{query[14]:>8}|{query[15]:>8}|{query[16]:>8.2%}\n'
                      f'{KPI[3]:<7}'
                      f'{query[17]:>5}|{query[18]:>8}|{query[19]:>8.2%}\n'
-                     f'{KPI[4]:<7}{query[20]:>22}\n'
-                     f'```',
+                     f'{KPI[4]:<7}{query[20]:>22}'
+                     f'\n\nАктуальность данных:\n{up_date}```',
                 reply_markup=keyboards.back,
                 parse_mode='MarkdownV2')
         else:
@@ -96,7 +103,6 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
                 text='❗ ТТ с таким номером не найдена!\n'
                      'Попробуйте еще раз!',
                 reply_markup=keyboards.back)
-
     else:
         await message.answer(
             text='❗ Номер ТТ не соответствует формату ввода!\n'
