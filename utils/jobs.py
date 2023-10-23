@@ -4,7 +4,6 @@ import aiofiles
 from datetime import datetime as dt
 from aiopath import AsyncPath
 from aiogram import Dispatcher
-from typing import Union
 
 import config
 from loader import db
@@ -12,7 +11,7 @@ from utils import queries
 
 
 # функция проверки в бд по текущей дате
-async def check(name: str, column_name: str, **kwargs) -> Union[list, None]:
+async def check(name: str, column_name: str, **kwargs) -> list | None:
     try:
         data = await db.get_all(
             await queries.get_value(
@@ -39,6 +38,16 @@ async def get_now() -> dt:
     return dt.strptime(str(now), '%Y-%m-%d')
 
 
+async def get_region_channel(region: str) -> str:
+    match region:
+        case 'Moscow':
+            return config.MOSCOW_CHANNEL_ID
+        case 'Center':
+            return config.CENTER_CHANNEL_ID
+        case 'North':
+            return config.NORTH_CHANNEL_ID
+
+
 # преобразование datetime в читаемый формат
 async def datetime_op(dt_start: str , dt_stop: str) -> tuple:
     datetime_start = dt.strptime(str(dt_start), '%Y-%m-%d %H:%M:%S')
@@ -60,11 +69,12 @@ async def check_bp_start(dp: Dispatcher):
     if data:
         for i in data:
             start, stop = await datetime_op(i[6], i[7])
+            chat_id = await get_region_channel(i[1])
             file = AsyncPath(str(i[8]))
             if await file.is_file():
                 async with aiofiles.open(file, 'rb') as photo:
                     await dp.bot.send_photo(
-                        chat_id=config.CHANNEL_ID,
+                        chat_id=chat_id,
                         photo=photo,
                         caption='С сегодняшнего дня доступна '
                                 'новая практика!\n\n'
@@ -76,7 +86,7 @@ async def check_bp_start(dp: Dispatcher):
                                 f'{str(stop)}')
             else:
                 await dp.bot.send_message(
-                    chat_id=config.CHANNEL_ID,
+                    chat_id=chat_id,
                     text='С сегодняшнего дня доступна новая '
                          'практика!\n\n'
                          f'<b>{str(i[2])}</b>\n\n'
@@ -99,8 +109,9 @@ async def check_mp_start(dp: Dispatcher):
     if data:
         for i in data:
             start, stop = await datetime_op(i[4], i[5])
+            chat_id = await get_region_channel(i[3])
             await dp.bot.send_message(
-                chat_id=config.CHANNEL_ID,
+                chat_id=chat_id,
                 text='С сегодняшнего дня доступна новая '
                      'Мотивационная программа!\n\n'
                      f'<b>{str(i[1])}</b>\n'
@@ -123,8 +134,9 @@ async def check_bp_stop(dp: Dispatcher):
         is_over=False)
     if data:
         for i in data:
+            chat_id = await get_region_channel(i[1])
             await dp.bot.send_message(
-                chat_id=config.CHANNEL_ID,
+                chat_id=chat_id,
                 text=f'Лучшая практика <b>{str(i[2])}</b> закончилась!')
 
 
@@ -139,8 +151,9 @@ async def check_mp_stop(dp: Dispatcher):
         is_over=False)
     if data:
         for i in data:
+            chat_id = await get_region_channel(i[3])
             await dp.bot.send_message(
-                chat_id=config.CHANNEL_ID,
+                chat_id=chat_id,
                 text=f'Мотивационная программа <b>{str(i[1])}</b> '
                      f'для <b>{str(i[2])}</b> '
                      f'в регионе <b>{str(i[3])}</b> закончилась!')

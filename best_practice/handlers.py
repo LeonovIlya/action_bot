@@ -57,6 +57,7 @@ async def get_bp(tg_id: int, **kwargs) -> list:
             tg_id=tg_id),
         **kwargs)
 
+
 @decorators.error_handler_message
 async def manage_practice(message: types.Message, state: FSMContext):
     data = await get_bp(tg_id=int(message.from_user.id),
@@ -103,7 +104,7 @@ async def action_manage(callback: types.CallbackQuery, state: FSMContext):
             await callback.message.delete_reply_markup()
             await callback.message.answer(
                 text='Введите новое название для практики:\n'
-                     '(Не более 45 символов, вместе с пробелами!)')
+                     '(Не более 40 символов, вместе с пробелами!)')
             await UserState.practice_manage_change_name.set()
 
         case 'change_desc':
@@ -147,8 +148,8 @@ async def action_manage(callback: types.CallbackQuery, state: FSMContext):
 async def manage_change_name(message: types.Message, state: FSMContext):
     data = await state.get_data()
     name = str(message.text)
-    if len(name) > 45:
-        await message.answer(text='❗ Превышен лимит в 45 символов!')
+    if len(name.encode('utf-8')) > 64:
+        await message.answer(text='❗ Превышен лимит в 40 символов!')
     else:
         check_name = await db.get_one(
             await queries.get_value(
@@ -290,7 +291,7 @@ async def take_part(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(bp_name=str(callback.data))
     await callback.message.answer(
         text=f'Вы уверены, что хотите участвовать в практике:\n'
-             f'<b>{callback.data}?</b>',
+             f'<b>"{callback.data}"?</b>',
         reply_markup=keyboards.confirm_keyboard)
     await UserState.practice_take_part_mr_confirm.set()
 
@@ -344,28 +345,35 @@ async def take_part_take_description(message: types.Message,
         username=await get_value_by_tgig(
             value='kas',
             tg_id=int(message.from_user.id)))
-    await db.post(queries.INSERT_PRACTICE_MR,
-                  bp_id=str(data['bp_id']),
-                  username=user[0],
-                  kas=user[1],
-                  tg_id=int(message.from_user.id),
-                  datetime_added=dt.now(),
-                  desc=str(message.text),
-                  file_link=str(data['destination']))
+    print(kas_tg_id)
+    if kas_tg_id[0] != 0:
+        await db.post(queries.INSERT_PRACTICE_MR,
+                      bp_id=str(data['bp_id']),
+                      username=user[0],
+                      kas=user[1],
+                      tg_id=int(message.from_user.id),
+                      datetime_added=dt.now(),
+                      desc=str(message.text),
+                      file_link=str(data['destination']))
 
-    await message.answer(
-        text='Ваше заявка принята, ожидайте решения!',
-        reply_markup=keyboards.back)
-    await message.bot.send_message(
-        chat_id=kas_tg_id[0],
-        text='🆕 Поступила новая заявка для участия в Лучшей '
-             'Практике!')
-
+        await message.answer(
+            text='Ваше заявка принята, ожидайте решения!',
+            reply_markup=keyboards.back)
+        await message.bot.send_message(
+            chat_id=kas_tg_id[0],
+            text='🆕 Поступила новая заявка для участия в Лучшей '
+                 'Практике!')
+    else:
+        await message.answer(
+            text='К сожалению ваш Супервайзер не подключен к боту, '
+                 'ваша заявка не может быть обработана((\nОбратитесь к вашему'
+                 ' Супервайзеру или Ситименеджеру для исправления ситуации!',
+            reply_markup=keyboards.back)
 
 async def add_new_practice_add_name(message: types.Message):
     await message.answer(
         text='Введите уникальное название новой практики:\n'
-             '(Не более 45 символов, вместе с пробелами!)',
+             '(Не более 40 символов, вместе с пробелами!)',
         reply_markup=keyboards.back)
     await UserState.practice_add.set()
 
@@ -373,8 +381,8 @@ async def add_new_practice_add_name(message: types.Message):
 @decorators.error_handler_message
 async def add_new_practice_add_desc(message: types.Message, state: FSMContext):
     name = str(message.text)
-    if len(name) > 45:
-        await message.answer(text='❗ Превышен лимит в 45 символов!\n'
+    if len(name.encode('utf-8')) > 64:
+        await message.answer(text='❗ Превышен лимит в 40 символов!\n'
                                   'Введите название еще раз!')
     else:
         check_name = await db.get_one(
@@ -475,7 +483,8 @@ async def add_new_practice(message: types.Message, state: FSMContext):
         datetime_stop=data['date_stop'],
         file_link=destination)
     await message.answer(
-        text=f'Новая лучшая практика <b>{data["name"]}</b> успешно добавлена!',
+        text=f'Новая лучшая практика <b>"{data["name"]}"</b> успешно '
+             f'добавлена!',
         reply_markup=keyboards.back)
 
 
@@ -674,9 +683,13 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
                 text='✅ Ваша заявка на участие в Лучшей Практике принята'
                      ' СитиМенеджером!')
             file_channel = AsyncPath(str(data['bp_mr_photo']))
+            region = await get_value_by_tgig(
+                value='region',
+                tg_id=int(callback.from_user.id))
+            chat_id = await jobs.get_region_channel(region)
             async with aiofiles.open(file_channel, 'rb') as photo:
                 await callback.bot.send_photo(
-                    chat_id=config.CHANNEL_ID,
+                    chat_id=chat_id,
                     photo=photo,
                     caption=f'Новая заявка для участия в Лучшей '
                             f'Практике!\n\n'
@@ -841,13 +854,14 @@ async def practice_start_voting_send(callback: types.CallbackQuery,
     if photos:
         bp_name = await db.get_one(
             await queries.get_value(
-                value='name',
+                value='name, region',
                 table='best_practice'),
             id=bp_id)
+        chat_id = await jobs.get_region_channel(bp_name[1])
         await callback.bot.send_message(
-            chat_id=config.CHANNEL_ID,
+            chat_id=chat_id,
             text=f'Началось голосование за участников Лучшей Практики'
-                 f' <b>{bp_name[0]}</b>!')
+                 f' <b>"{bp_name[0]}"</b>!')
         await asyncio.sleep(1)
         for i in photos:
             vote_keyboard = InlineKeyboardMarkup()
@@ -857,7 +871,7 @@ async def practice_start_voting_send(callback: types.CallbackQuery,
             file = AsyncPath(str(i[7]))
             async with aiofiles.open(file, 'rb') as photo:
                 await callback.bot.send_photo(
-                    chat_id=config.CHANNEL_ID,
+                    chat_id=chat_id,
                     photo=photo,
                     caption=i[6],
                     reply_markup=vote_keyboard)
@@ -905,7 +919,7 @@ async def practice_stop_voting(message: types.Message, state: FSMContext):
         await message.answer(
             text='Нет практик для остановки голосования!\n'
                  'Практики в вашем регионе либо еще не завершились, '
-                 'либо отсутствуют. ',
+                 'либо отсутствуют.',
             reply_markup=keyboards.back)
 
 
@@ -924,12 +938,13 @@ async def practice_stop_voting_send(callback: types.CallbackQuery,
         id=bp_id)
     bp_name = await db.get_one(
         await queries.get_value(
-            value='name',
+            value='name, region',
             table='best_practice'),
         id=bp_id)
+    chat_id = await jobs.get_region_channel(bp_name[1])
     await callback.bot.send_message(
-        chat_id=config.CHANNEL_ID,
-        text=f'Голосование за участников Лучшей Практики <b>{bp_name[0]}</b> '
+        chat_id=chat_id,
+        text=f'Голосование за участников Лучшей Практики <b>"{bp_name[0]}"</b> '
              f'закончилось!')
     await callback.message.answer(
         text='Голосование закончено!',

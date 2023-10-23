@@ -45,7 +45,7 @@ async def kpi_mr(message: types.Message, state: FSMContext):
              f'{query[17]:>8}|{query[18]:>8}|{query[19]:>8.2%}\n'
              f'{KPI[3]:<7}'
              f'{query[20]:>5}|{query[21]:>8}|{query[22]:>8.2%}\n'
-             f'{KPI[4]:<7}{query[23]:>22}'
+             f'{KPI[4]:<7}{query[23]:>22.2%}'
              f'\n\nАктуальность данных:\n{up_date}```',
         reply_markup=keyboards.back,
         parse_mode='MarkdownV2')
@@ -94,7 +94,7 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
                      f'{query[14]:>8}|{query[15]:>8}|{query[16]:>8.2%}\n'
                      f'{KPI[3]:<7}'
                      f'{query[17]:>5}|{query[18]:>8}|{query[19]:>8.2%}\n'
-                     f'{KPI[4]:<7}{query[20]:>22}'
+                     f'{KPI[4]:<7}{query[20]:>22.2%}'
                      f'\n\nАктуальность данных:\n{up_date}```',
                 reply_markup=keyboards.back,
                 parse_mode='MarkdownV2')

@@ -22,30 +22,30 @@ logging.basicConfig(filename=config.LOG_FILE,
                     encoding='UTF-8',
                     filemode='a',
                     level=logging.INFO,
-                    format="%(asctime)s - %(levelname)s - %(name)s - %("
-                           "message)s")
+                    format='%(asctime)s - %(levelname)s - %(name)s - %('
+                           'message)s')
 
 
 def set_scheduled_jobs():
     scheduler.add_job(func=check_bp_stop,
                       trigger='cron',
-                      hour=0,
-                      minute=1,
+                      hour=3,
+                      minute=5,
                       args=(dp,))
     scheduler.add_job(func=check_mp_stop,
                       trigger='cron',
-                      hour=0,
-                      minute=1,
+                      hour=3,
+                      minute=5,
                       args=(dp,))
     scheduler.add_job(func=check_bp_start,
                       trigger='cron',
-                      hour=0,
-                      minute=2,
+                      hour=3,
+                      minute=10,
                       args=(dp,))
     scheduler.add_job(func=check_mp_start,
                       trigger='cron',
-                      hour=0,
-                      minute=2,
+                      hour=3,
+                      minute=10,
                       args=(dp,))
     scheduler.add_job(func=check_redis,
                       trigger='interval',
@@ -58,7 +58,7 @@ def set_scheduled_jobs():
 
 
 async def start():
-    logger.info("Starting bot")
+    logger.info('>>> Starting bot')
 
     await db.create_connection()
 
@@ -89,6 +89,6 @@ if __name__ == '__main__':
     try:
         loop.run_until_complete(start())
     except KeyboardInterrupt:
-        logger.info("Bot stopped by keyboard")
+        logger.info('>>> Bot stopped by keyboard')
     finally:
         loop.close()
