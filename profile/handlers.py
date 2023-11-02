@@ -92,7 +92,7 @@ async def comments(message: types.Message):
     await UserState.profile_comments.set()
 
 
-# @decorators.error_handler_message
+@decorators.error_handler_message
 async def send_comments(message: types.Message, state: FSMContext):
     text_to_send = str(message.text)
     user = await get_value_by_tgig(

@@ -70,13 +70,15 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
         if query:
             address = re.sub(R_STR, '', query[4])
             address = address \
-                .replace("_", "\\_") \
-                .replace(".", "\\.") \
-                .replace("-", "\\-") \
-                .replace("*", "\\*") \
-                .replace("@", "\\@") \
-                .replace("&", "\\&")
-            mr = query[5].replace("_", "\\_")
+                .replace('_', '\\_') \
+                .replace('.', '\\.') \
+                .replace('-', '\\-') \
+                .replace('*', '\\*') \
+                .replace('@', '\\@') \
+                .replace('(', '\\(') \
+                .replace(')', '\\)') \
+                .replace('&', '\\&')
+            mr = query[5].replace("_", "\\_").replace('-', '\\-')
             up_date = await convert_datetime(query[24])
             await message.answer(
                 text=f'*TT №* {tt_num}\n'

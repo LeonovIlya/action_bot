@@ -317,8 +317,9 @@ async def take_part_take_photo(message: types.Message, state: FSMContext):
             value='id',
             table='best_practice'),
         name=str(data['bp_name']))
+    uu_id = str(uuid.uuid1())
     destination = f'./files/best_practice/{int(bp_id[0])}/' \
-                  f'{uuid.uuid1()}.jpg'
+                  f'{uu_id}.jpg'
     await state.update_data(destination=destination)
     await state.update_data(bp_id=bp_id[0])
     await message.photo[-1].download(
@@ -345,7 +346,6 @@ async def take_part_take_description(message: types.Message,
         username=await get_value_by_tgig(
             value='kas',
             tg_id=int(message.from_user.id)))
-    print(kas_tg_id)
     if kas_tg_id[0] != 0:
         await db.post(queries.INSERT_PRACTICE_MR,
                       bp_id=str(data['bp_id']),
@@ -357,18 +357,23 @@ async def take_part_take_description(message: types.Message,
                       file_link=str(data['destination']))
 
         await message.answer(
-            text='Ваше заявка принята, ожидайте решения!',
+            text='Ваше заявка принята, ожидайте решения!\n\n'
+                 'Нажмите "Назад"',
             reply_markup=keyboards.back)
         await message.bot.send_message(
             chat_id=kas_tg_id[0],
             text='🆕 Поступила новая заявка для участия в Лучшей '
                  'Практике!')
+
     else:
         await message.answer(
-            text='К сожалению ваш Супервайзер не подключен к боту, '
-                 'ваша заявка не может быть обработана((\nОбратитесь к вашему'
-                 ' Супервайзеру или Ситименеджеру для исправления ситуации!',
+            text='К сожалению ваш Супервайзер еще не подключен к боту, '
+                 'ваша заявка не может быть обработана((\nОбратитесь к вашему '
+                 'Супервайзеру или Ситименеджеру для исправления ситуации!\n\n'
+                 'Нажмите "Назад"',
             reply_markup=keyboards.back)
+    await state.reset_data()
+
 
 async def add_new_practice_add_name(message: types.Message):
     await message.answer(
@@ -1034,7 +1039,7 @@ async def practice_to_archive(message: types.Message, state: FSMContext):
             reply_markup=keyboards.back)
 
 
-#@decorators.error_handler_callback
+@decorators.error_handler_callback
 async def practice_to_archive_send(callback: types.CallbackQuery,
                                 state: FSMContext):
     bp_id = str(callback.data).split('_')[1]

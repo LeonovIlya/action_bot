@@ -108,7 +108,6 @@ async def name_choice(callback: types.CallbackQuery, state: FSMContext):
                 reply_markup=keyboards.back)
     except (TypeError, FileNotFoundError) as error:
         await callback.bot.answer_callback_query(callback.id)
-        logging.info('Planogram error: %s', error)
         await callback.message.answer(
             text='Файл не найден!',
             reply_markup=keyboards.back)
