@@ -83,8 +83,6 @@ practice_menu_cm = ReplyKeyboardMarkup(keyboard=[
     one_time_keyboard=True)
 
 vote_menu_cm = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='Открыть голосование🟢')],
-    [KeyboardButton(text='Закрыть голосование🛑')],
     [KeyboardButton(text='Получить ТОП-10🔟')],
     [KeyboardButton(text='Отправить в архив🗃')],
     [KeyboardButton(text='Назад↩')]],

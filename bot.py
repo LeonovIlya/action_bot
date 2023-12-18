@@ -28,9 +28,11 @@ logging.basicConfig(filename=config.LOG_FILE,
 
 def set_scheduled_jobs():
     scheduler.add_job(func=check_bp_stop,
-                      trigger='cron',
-                      hour=3,
-                      minute=5,
+                      # trigger='cron',
+                      # hour=3,
+                      # minute=5,
+                      trigger='interval',
+                      hours=1,
                       args=(dp,))
     scheduler.add_job(func=check_mp_stop,
                       trigger='cron',
@@ -38,9 +40,11 @@ def set_scheduled_jobs():
                       minute=5,
                       args=(dp,))
     scheduler.add_job(func=check_bp_start,
-                      trigger='cron',
-                      hour=3,
-                      minute=10,
+                      # trigger='cron',
+                      # hour=3,
+                      # minute=10,
+                      trigger='interval',
+                      hours=1,
                       args=(dp,))
     scheduler.add_job(func=check_mp_start,
                       trigger='cron',

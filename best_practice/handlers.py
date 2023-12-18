@@ -686,20 +686,31 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
             await callback.bot.send_message(
                 chat_id=data['mr_tg_id'],
                 text='✅ Ваша заявка на участие в Лучшей Практике принята'
-                     ' СитиМенеджером!')
+                     ' СитиМенеджером и отправлена на голосование!')
             file_channel = AsyncPath(str(data['bp_mr_photo']))
             region = await get_value_by_tgig(
                 value='region',
                 tg_id=int(callback.from_user.id))
             chat_id = await jobs.get_region_channel(region)
+            vote_keyboard = InlineKeyboardMarkup()
+            vote_keyboard.insert(
+                InlineKeyboardButton('Поставить Лайк 👍🏻',
+                                     callback_data=f'bp_vote_'
+                                                   f'{data["bp_mr_id"]}'))
             async with aiofiles.open(file_channel, 'rb') as photo:
                 await callback.bot.send_photo(
                     chat_id=chat_id,
                     photo=photo,
-                    caption=f'Новая заявка для участия в Лучшей '
-                            f'Практике!\n\n'
-                            f'"{data["bp_desc"]}"')
-            await asyncio.sleep(0.1)
+                    caption=data['bp_desc'],
+                    reply_markup=vote_keyboard)
+            await db.post(
+                await queries.update_value(
+                    table='best_practice_mr',
+                    column_name='posted',
+                    where_name='id'),
+                posted=True,
+                id=data['bp_mr_id'])
+            await asyncio.sleep(1)
             bp_mr = await db.get_one(
                 await queries.get_value(
                     value='*',
@@ -802,158 +813,159 @@ async def practice_vote_menu_cm(message: types.Message, state: FSMContext):
 
 
 # обработка нажатия открыть голосование
-@decorators.error_handler_message
-async def practice_start_voting(message: types.Message, state: FSMContext):
-    data = await get_bp(tg_id=int(message.from_user.id),
-                        is_active=True,
-                        is_over=True,
-                        is_v_active=False,
-                        is_v_over=False)
-    if data:
-        await message.answer(
-            text='Выберите практику для старта голосования:\n'
-                 '(Сразу после старта все заявки, прошедшие модерацию '
-                 'автоматически отправятся в ТГ-канал региона!)',
-            reply_markup=keyboards.back)
-        for i in data:
-            keyboard = InlineKeyboardMarkup()
-            keyboard.insert(
-                InlineKeyboardButton('Начать голосование',
-                                     callback_data=f'{i[0]}'))
-            file = AsyncPath(str(i[8]))
-            async with aiofiles.open(file, 'rb') as photo:
-                await message.answer_photo(
-                    photo=photo,
-                    caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
-                    reply_markup=keyboard)
-        await UserState.practice_start_voting.set()
-    else:
-        await message.answer(
-            text='Нет практик для старта голосования!\n'
-                 'Практики в вашем регионе либо еще не завершились, '
-                 'либо отсутствуют. ',
-            reply_markup=keyboards.back)
-
-
-# старт голосования и отправка инфы в канал
-@decorators.error_handler_callback
-async def practice_start_voting_send(callback: types.CallbackQuery,
-                                         state: FSMContext):
-    bp_id = int(callback.data)
-    await callback.message.delete()
-    await db.post(
-        await queries.update_value(
-            table='best_practice',
-            column_name='is_v_active',
-            where_name='id'),
-        is_v_active=True,
-        id=bp_id)
-    photos = await db.get_all(
-        await queries.get_value(
-            value='*',
-            table='best_practice_mr'),
-        bp_id=bp_id,
-        kas_approved=True,
-        cm_approved=True,
-        posted=False)
-    if photos:
-        bp_name = await db.get_one(
-            await queries.get_value(
-                value='name, region',
-                table='best_practice'),
-            id=bp_id)
-        chat_id = await jobs.get_region_channel(bp_name[1])
-        await callback.bot.send_message(
-            chat_id=chat_id,
-            text=f'Началось голосование за участников Лучшей Практики'
-                 f' <b>"{bp_name[0]}"</b>!')
-        await asyncio.sleep(1)
-        for i in photos:
-            vote_keyboard = InlineKeyboardMarkup()
-            vote_keyboard.insert(
-                InlineKeyboardButton('Поставить Лайк 👍🏻',
-                                     callback_data=f'bp_vote_{i[0]}'))
-            file = AsyncPath(str(i[7]))
-            async with aiofiles.open(file, 'rb') as photo:
-                await callback.bot.send_photo(
-                    chat_id=chat_id,
-                    photo=photo,
-                    caption=i[6],
-                    reply_markup=vote_keyboard)
-            await asyncio.sleep(0.1)
-            await db.post(
-                await queries.update_value(
-                    table='best_practice_mr',
-                    column_name='posted',
-                    where_name='id'),
-                posted=True,
-                id=i[0])
-        await callback.message.answer(
-            text='Голосование началось, заявки отправлены в канал!')
-    else:
-        await callback.answer(
-            text='Нет заявок для голосования!',
-            show_alert=True)
-
-
-# обработка нажатия закрыть голосование
-@decorators.error_handler_message
-async def practice_stop_voting(message: types.Message, state: FSMContext):
-    data = await get_bp(tg_id=int(message.from_user.id),
-                        is_active=True,
-                        is_over=True,
-                        is_v_active=True,
-                        is_v_over=False)
-    if data:
-        await message.answer(
-            text='Выберите практику для остановки голосования:',
-            reply_markup=keyboards.back)
-        for i in data:
-            keyboard = InlineKeyboardMarkup()
-            keyboard.insert(
-                InlineKeyboardButton('Остановить голосование',
-                                     callback_data=f'{i[0]}'))
-            file = AsyncPath(str(i[8]))
-            async with aiofiles.open(file, 'rb') as photo:
-                await message.answer_photo(
-                    photo=photo,
-                    caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
-                    reply_markup=keyboard)
-        await UserState.practice_stop_voting.set()
-    else:
-        await message.answer(
-            text='Нет практик для остановки голосования!\n'
-                 'Практики в вашем регионе либо еще не завершились, '
-                 'либо отсутствуют.',
-            reply_markup=keyboards.back)
-
-
-# остановка голосования и отправка инфы в канал
-@decorators.error_handler_callback
-async def practice_stop_voting_send(callback: types.CallbackQuery,
-                                         state: FSMContext):
-    bp_id = int(callback.data)
-    await callback.message.delete()
-    await db.post(
-        await queries.update_value(
-            table='best_practice',
-            column_name='is_v_over',
-            where_name='id'),
-        is_v_active=True,
-        id=bp_id)
-    bp_name = await db.get_one(
-        await queries.get_value(
-            value='name, region',
-            table='best_practice'),
-        id=bp_id)
-    chat_id = await jobs.get_region_channel(bp_name[1])
-    await callback.bot.send_message(
-        chat_id=chat_id,
-        text=f'Голосование за участников Лучшей Практики <b>"{bp_name[0]}"</b> '
-             f'закончилось!')
-    await callback.message.answer(
-        text='Голосование закончено!',
-        reply_markup=keyboards.back)
+# @decorators.error_handler_message
+# async def practice_start_voting(message: types.Message, state: FSMContext):
+#     data = await get_bp(tg_id=int(message.from_user.id),
+#                         is_active=True,
+#                         is_over=True,
+#                         is_v_active=False,
+#                         is_v_over=False)
+#     if data:
+#         await message.answer(
+#             text='Выберите практику для старта голосования:\n'
+#                  '(Сразу после старта все заявки, прошедшие модерацию '
+#                  'автоматически отправятся в ТГ-канал региона!)',
+#             reply_markup=keyboards.back)
+#         for i in data:
+#             keyboard = InlineKeyboardMarkup()
+#             keyboard.insert(
+#                 InlineKeyboardButton('Начать голосование',
+#                                      callback_data=f'{i[0]}'))
+#             file = AsyncPath(str(i[8]))
+#             async with aiofiles.open(file, 'rb') as photo:
+#                 await message.answer_photo(
+#                     photo=photo,
+#                     caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
+#                     reply_markup=keyboard)
+#         await UserState.practice_start_voting.set()
+#     else:
+#         await message.answer(
+#             text='Нет практик для старта голосования!\n'
+#                  'Практики в вашем регионе либо еще не завершились, '
+#                  'либо отсутствуют. ',
+#             reply_markup=keyboards.back)
+#
+#
+# # старт голосования и отправка инфы в канал
+# @decorators.error_handler_callback
+# async def practice_start_voting_send(callback: types.CallbackQuery,
+#                                          state: FSMContext):
+#     bp_id = int(callback.data)
+#     await callback.message.delete()
+#     await db.post(
+#         await queries.update_value(
+#             table='best_practice',
+#             column_name='is_v_active',
+#             where_name='id'),
+#         is_v_active=True,
+#         id=bp_id)
+#     photos = await db.get_all(
+#         await queries.get_value(
+#             value='*',
+#             table='best_practice_mr'),
+#         bp_id=bp_id,
+#         kas_approved=True,
+#         cm_approved=True,
+#         posted=False)
+#     if photos:
+#         bp_name = await db.get_one(
+#             await queries.get_value(
+#                 value='name, region',
+#                 table='best_practice'),
+#             id=bp_id)
+#         chat_id = await jobs.get_region_channel(bp_name[1])
+#         await callback.bot.send_message(
+#             chat_id=chat_id,
+#             text=f'Началось голосование за участников Лучшей Практики'
+#                  f' <b>"{bp_name[0]}"</b>!')
+#         await asyncio.sleep(3)
+#         for i in photos:
+#             vote_keyboard = InlineKeyboardMarkup()
+#             vote_keyboard.insert(
+#                 InlineKeyboardButton('Поставить Лайк 👍🏻',
+#                                      callback_data=f'bp_vote_{i[0]}'))
+#             file = AsyncPath(str(i[7]))
+#             async with aiofiles.open(file, 'rb') as photo:
+#                 await callback.bot.send_photo(
+#                     chat_id=chat_id,
+#                     photo=photo,
+#                     caption=i[6],
+#                     reply_markup=vote_keyboard)
+#             await asyncio.sleep(0.1)
+#             await db.post(
+#                 await queries.update_value(
+#                     table='best_practice_mr',
+#                     column_name='posted',
+#                     where_name='id'),
+#                 posted=True,
+#                 id=i[0])
+#             await asyncio.sleep(3)
+#         await callback.message.answer(
+#             text='Голосование началось, заявки отправлены в канал!')
+#     else:
+#         await callback.answer(
+#             text='Нет заявок для голосования!',
+#             show_alert=True)
+#
+#
+# # обработка нажатия закрыть голосование
+# @decorators.error_handler_message
+# async def practice_stop_voting(message: types.Message, state: FSMContext):
+#     data = await get_bp(tg_id=int(message.from_user.id),
+#                         is_active=True,
+#                         is_over=True,
+#                         is_v_active=True,
+#                         is_v_over=False)
+#     if data:
+#         await message.answer(
+#             text='Выберите практику для остановки голосования:',
+#             reply_markup=keyboards.back)
+#         for i in data:
+#             keyboard = InlineKeyboardMarkup()
+#             keyboard.insert(
+#                 InlineKeyboardButton('Остановить голосование',
+#                                      callback_data=f'{i[0]}'))
+#             file = AsyncPath(str(i[8]))
+#             async with aiofiles.open(file, 'rb') as photo:
+#                 await message.answer_photo(
+#                     photo=photo,
+#                     caption=f'<b>{str(i[2])}</b>\n\n{str(i[3])}',
+#                     reply_markup=keyboard)
+#         await UserState.practice_stop_voting.set()
+#     else:
+#         await message.answer(
+#             text='Нет практик для остановки голосования!\n'
+#                  'Практики в вашем регионе либо еще не завершились, '
+#                  'либо отсутствуют.',
+#             reply_markup=keyboards.back)
+#
+#
+# # остановка голосования и отправка инфы в канал
+# @decorators.error_handler_callback
+# async def practice_stop_voting_send(callback: types.CallbackQuery,
+#                                          state: FSMContext):
+#     bp_id = int(callback.data)
+#     await callback.message.delete()
+#     await db.post(
+#         await queries.update_value(
+#             table='best_practice',
+#             column_name='is_v_over',
+#             where_name='id'),
+#         is_v_active=True,
+#         id=bp_id)
+#     bp_name = await db.get_one(
+#         await queries.get_value(
+#             value='name, region',
+#             table='best_practice'),
+#         id=bp_id)
+#     chat_id = await jobs.get_region_channel(bp_name[1])
+#     await callback.bot.send_message(
+#         chat_id=chat_id,
+#         text=f'Голосование за участников Лучшей Практики <b>"{bp_name[0]}"</b> '
+#              f'закончилось!')
+#     await callback.message.answer(
+#         text='Голосование закончено!',
+#         reply_markup=keyboards.back)
 
 
 # обработка нажатия кнопки получить топ10
@@ -962,8 +974,6 @@ async def practice_get_top(message: types.Message, state: FSMContext):
     data = await get_bp(tg_id=int(message.from_user.id),
                         is_active=True,
                         is_over=True,
-                        is_v_active=True,
-                        is_v_over=True,
                         is_archive=False)
     if data:
         await message.answer(
@@ -983,7 +993,7 @@ async def practice_get_top(message: types.Message, state: FSMContext):
             await UserState.practice_get_top.set()
     else:
         await message.answer(
-            text='Практики, в которых закончены голосования не найдены!',
+            text='Практики, которые закончились, не найдены!',
             reply_markup=keyboards.back)
 
 
@@ -991,6 +1001,7 @@ async def practice_get_top(message: types.Message, state: FSMContext):
 @decorators.error_handler_callback
 async def practice_get_top_send(callback: types.CallbackQuery,
                                 state: FSMContext):
+    await callback.bot.answer_callback_query(callback.id)
     bp_id = str(callback.data).split('_')[1]
     data = await db.get_all(
         queries.TOP10,
@@ -1002,7 +1013,7 @@ async def practice_get_top_send(callback: types.CallbackQuery,
                 await callback.message.answer_photo(
                     photo=photo,
                     caption=f'<b>ФИО:</b> {str(i[2])}\n\n'
-                            f'<b>Лайки:</b> {str(i[8])}')
+                            f'<b>Лайков:</b> {str(i[8])}')
     else:
         await callback.message.answer(
             text='Заявки не найдены!',
@@ -1014,8 +1025,6 @@ async def practice_to_archive(message: types.Message, state: FSMContext):
     data = await get_bp(tg_id=int(message.from_user.id),
                         is_active=True,
                         is_over=True,
-                        is_v_active=True,
-                        is_v_over=True,
                         is_archive=False)
     if data:
         await message.answer(
@@ -1042,6 +1051,7 @@ async def practice_to_archive(message: types.Message, state: FSMContext):
 @decorators.error_handler_callback
 async def practice_to_archive_send(callback: types.CallbackQuery,
                                 state: FSMContext):
+    await callback.bot.answer_callback_query(callback.id)
     bp_id = str(callback.data).split('_')[1]
     await db.post(
        await queries.update_value(
@@ -1266,20 +1276,20 @@ def register_handlers_best_practice(dp: Dispatcher):
         practice_vote_menu_cm,
         text='Голосование🗳',
         state=UserState.practice_menu_cm)
-    dp.register_message_handler(
-        practice_start_voting,
-        text='Открыть голосование🟢',
-        state=UserState.practice_vote_menu_cm)
-    dp.register_callback_query_handler(
-        practice_start_voting_send,
-        state=UserState.practice_start_voting)
-    dp.register_message_handler(
-        practice_stop_voting,
-        text='Закрыть голосование🛑',
-        state=UserState.practice_vote_menu_cm)
-    dp.register_callback_query_handler(
-        practice_stop_voting_send,
-        state=UserState.practice_stop_voting)
+    # dp.register_message_handler(
+    #     practice_start_voting,
+    #     text='Открыть голосование🟢',
+    #     state=UserState.practice_vote_menu_cm)
+    # dp.register_callback_query_handler(
+    #     practice_start_voting_send,
+    #     state=UserState.practice_start_voting)
+    # dp.register_message_handler(
+    #     practice_stop_voting,
+    #     text='Закрыть голосование🛑',
+    #     state=UserState.practice_vote_menu_cm)
+    # dp.register_callback_query_handler(
+    #     practice_stop_voting_send,
+    #     state=UserState.practice_stop_voting)
     dp.register_message_handler(
         practice_get_top,
         text='Получить ТОП-10🔟',
