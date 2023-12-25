@@ -18,7 +18,7 @@ CLUSTERS = ('0', '1', '2', '3')
 SHOPS = ('Верный', 'Дикси', 'Лента', 'Магнит', 'Перекресток', 'Пятерочка')
 SHOPS_PROMO = ('Атак', 'Ашан', 'Верный', 'ГиперГлобус', 'Дикси', 'Лента',
                'Магнит', 'Метро', 'Окей', 'Перекресток', 'Пятерочка')
-MAGNITS = ('Магнит ГМ', 'Магнит МК', 'Магнит ММ')
+MAGNITS = ('Магнит ГМ', 'Магнит МК', 'Магнит ММ', 'Назад')
 
 R_STR = r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,' \
         r')|(\s№\s)|(\sг,)'
@@ -43,7 +43,6 @@ async def planogram_choice(message: types.Message):
 
 # выбираем торговую сеть
 async def cluster_choice(callback: types.CallbackQuery, state: FSMContext):
-    await callback.bot.answer_callback_query(callback.id)
     await state.update_data(cluster=callback.data)
     keyboard = await keyboards.get_inline_buttons(SHOPS)
     await callback.bot.edit_message_text(
@@ -57,8 +56,14 @@ async def cluster_choice(callback: types.CallbackQuery, state: FSMContext):
 @decorators.error_handler_callback
 # выбираем формат магазина
 async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
-    await callback.bot.answer_callback_query(callback.id)
-    if callback.data == 'Магнит':
+    if callback.data == 'Назад':
+        keyboard = await keyboards.get_inline_buttons(SHOPS)
+        await callback.bot.edit_message_text(
+            chat_id=callback.from_user.id,
+            message_id=callback.message.message_id,
+            text='Выберите торговую сеть:',
+            reply_markup=keyboard)
+    elif callback.data == 'Магнит':
         keyboard = await keyboards.get_inline_buttons(MAGNITS)
         await callback.bot.edit_message_text(
             chat_id=callback.from_user.id,
@@ -66,20 +71,26 @@ async def shop_choice(callback: types.CallbackQuery, state: FSMContext):
             text='Выберите формат Магнита:',
             reply_markup=keyboard)
     else:
+        cluster_data = await state.get_data()
         data = await db.get_all(
             await queries.get_value(
                 value='DISTINCT name',
                 table='planograms'),
-            shop_name=str(callback.data))
-        data = [i[0] for i in data]
-        keyboard = await keyboards.get_inline_buttons(data)
-        await callback.bot.edit_message_text(
-            chat_id=callback.from_user.id,
-            message_id=callback.message.message_id,
-            text='Выберите планограмму:',
-            reply_markup=keyboard)
-        await state.update_data(shop_name=callback.data)
-        await UserState.tools_plan_name.set()
+            shop_name=str(callback.data),
+            cluster=cluster_data['cluster'])
+        if data:
+            data = [i[0] for i in data]
+            keyboard = await keyboards.get_inline_buttons(data)
+            await callback.bot.edit_message_text(
+                chat_id=callback.from_user.id,
+                message_id=callback.message.message_id,
+                text='Выберите планограмму:',
+                reply_markup=keyboard)
+            await state.update_data(shop_name=callback.data)
+            await UserState.tools_plan_name.set()
+        else:
+            await callback.answer(text='Для данного кластера и данной сети нет'
+                                       ' планограмм!', show_alert=False)
 
 
 @decorators.error_handler_callback
@@ -178,6 +189,13 @@ async def get_promo_action(callback: types.CallbackQuery, state: FSMContext):
             chat_id=callback.from_user.id,
             message_id=callback.message.message_id,
             text='Выберите формат Магнита:',
+            reply_markup=keyboard)
+    elif callback.data == 'Назад':
+        keyboard = await keyboards.get_inline_buttons(SHOPS_PROMO)
+        await callback.bot.edit_message_text(
+            chat_id=callback.from_user.id,
+            message_id=callback.message.message_id,
+            text='Выберите торговую сеть:',
             reply_markup=keyboard)
     else:
         file_link = await db.get_one(

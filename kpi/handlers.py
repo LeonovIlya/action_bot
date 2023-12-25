@@ -68,8 +68,8 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
                 table='tt'),
             tt_num=tt_num)
         if query:
-            address = re.sub(R_STR, '', query[4])
-            address = address \
+            tt_address = re.sub(R_STR, '', query[4])
+            tt_address = tt_address \
                 .replace('_', '\\_') \
                 .replace('.', '\\.') \
                 .replace('-', '\\-') \
@@ -78,14 +78,17 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
                 .replace('(', '\\(') \
                 .replace(')', '\\)') \
                 .replace('&', '\\&')
-            mr = query[5].replace("_", "\\_").replace('-', '\\-')
+            mr_name = query[5].replace("_", "\\_").replace('-', '\\-')
+            kas_name = query[6].replace("_", "\\_").replace('-', '\\-')
+            cm_name = query[7].replace("_", "\\_").replace('-', '\\-')
             up_date = await convert_datetime(query[24])
             await message.answer(
                 text=f'*TT №* {tt_num}\n'
                      f'*Сеть:* {query[3]}\n'
-                     f'*Адрес:* {address}\n'
-                     f'*MR:* {mr}\n'
-                     f'*KAS:* {query[6]}\n\n'
+                     f'*Адрес:* {tt_address}\n'
+                     f'*MR:* {mr_name}\n'
+                     f'*KAS:* {kas_name}\n'
+                     f'*CM:* {cm_name}\n\n'
                      f'```\n'
                      f'        план|    факт|результат\n'
                      f'{KPI[0]:<4}'

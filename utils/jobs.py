@@ -175,12 +175,12 @@ async def check_redis(dp: Dispatcher):
                     socket_connect_timeout=1)
     try:
         r.ping()
-        logging.info('Checking redis connection - OK')
     except (redis.exceptions.ConnectionError,
             redis.exceptions.TimeoutError):
         await dp.bot.send_message(
             chat_id=config.ADMIN_ID,
             text='‼REDIS УПАЛ‼')
+        logging.info('Checking redis connection - FAIL')
 
 
 # очистка лог-файла
