@@ -16,14 +16,25 @@ R_STR = r'(^\d{6},)|(\w+\sобл,)|(\w+-\w+\sр-н,)|(\w+\sр-н,)|(\w+\sрн,' 
 KPI = ('PSS:', 'OSA:', 'TT:', 'VISITS:', 'ISA-OSA:')
 
 
+async def convert_datetime(value: str):
+    return dt.strptime(value, '%Y-%m-%d %H:%M:%S').strftime('%d %B %Y')
+
+
+async def replace_symbols(text: str) -> str:
+    return text.replace('_', '\\_') \
+        .replace('.', '\\.') \
+        .replace('-', '\\-') \
+        .replace('*', '\\*') \
+        .replace('@', '\\@') \
+        .replace('(', '\\(') \
+        .replace(')', '\\)') \
+        .replace('&', '\\&')
+
+
 async def kpi_menu(message: types.Message):
     await message.answer(text='Выберите пункт из меню:',
                          reply_markup=keyboards.kpi_menu)
     await UserState.kpi_menu.set()
-
-
-async def convert_datetime(value: str):
-    return dt.strptime(value, '%Y-%m-%d %H:%M:%S').strftime('%d %B %Y')
 
 
 @decorators.error_handler_message
@@ -68,19 +79,10 @@ async def kpi_search_tt(message: types.Message, state: FSMContext):
                 table='tt'),
             tt_num=tt_num)
         if query:
-            tt_address = re.sub(R_STR, '', query[4])
-            tt_address = tt_address \
-                .replace('_', '\\_') \
-                .replace('.', '\\.') \
-                .replace('-', '\\-') \
-                .replace('*', '\\*') \
-                .replace('@', '\\@') \
-                .replace('(', '\\(') \
-                .replace(')', '\\)') \
-                .replace('&', '\\&')
-            mr_name = query[5].replace("_", "\\_").replace('-', '\\-')
-            kas_name = query[6].replace("_", "\\_").replace('-', '\\-')
-            cm_name = query[7].replace("_", "\\_").replace('-', '\\-')
+            tt_address = await replace_symbols(re.sub(R_STR, '', query[4]))
+            mr_name = await replace_symbols(query[5])
+            kas_name = await replace_symbols(query[6])
+            cm_name = await replace_symbols(query[7])
             up_date = await convert_datetime(query[24])
             await message.answer(
                 text=f'*TT №* {tt_num}\n'

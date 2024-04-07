@@ -36,6 +36,7 @@ start_menu_cm = ReplyKeyboardMarkup(keyboard=[
 tools_menu = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Планограммы🧮'), KeyboardButton(text='ДМП📦')],
     [KeyboardButton(text='Промо🎁'), KeyboardButton(text='Картина Успеха🎉')],
+    [KeyboardButton(text='Калькулятор PSS🔢')],
     [KeyboardButton(text='Главное меню📱')]],
     resize_keyboard=True,
     one_time_keyboard=True)
@@ -89,7 +90,6 @@ vote_menu_cm = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-
 # меню мотивационных программ
 mp_menu = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Текущие МП💸')],
@@ -119,7 +119,6 @@ profile_menu_cm = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-
 # стартовая кнопка
 start = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text='START▶️')]],
@@ -141,10 +140,10 @@ main_menu = ReplyKeyboardMarkup(
 # инлайн клавиатура да/нет
 confirm_keyboard = InlineKeyboardMarkup()
 confirm_keyboard.insert(
-    InlineKeyboardButton('Да',
+    InlineKeyboardButton('Да✅',
                          callback_data='bp_yes'))
 confirm_keyboard.insert(
-    InlineKeyboardButton('Нет',
+    InlineKeyboardButton('Нет❌',
                          callback_data='bp_no'))
 
 # инлайн клавиатура редактирования лучших практик
@@ -176,6 +175,22 @@ accept_keyboard.insert(
 accept_keyboard.insert(
     InlineKeyboardButton('Отклонить❌',
                          callback_data='Decline'))
+
+# инлайн клавиатура калькулятора PSS
+pss_calc_keyboard = InlineKeyboardMarkup()
+pss_calc_keyboard.row(
+    InlineKeyboardButton('Whiskas ПАУЧ',
+                         callback_data='pss_calc_1'),
+    InlineKeyboardButton('Perfect Fit ПАУЧ',
+                         callback_data='pss_calc_2'))
+pss_calc_keyboard.add(
+    InlineKeyboardButton('Sheba ПАУЧ',
+                         callback_data='pss_calc_2'))
+pss_calc_keyboard.row(
+    InlineKeyboardButton('Whiskas СУХОЙ',
+                         callback_data='pss_calc_2'),
+    InlineKeyboardButton('Perfect Fit СУХОЙ',
+                         callback_data='pss_calc_1'))
 
 
 # формируем инлайн клавиатуру из кортежа

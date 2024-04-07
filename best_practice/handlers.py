@@ -69,7 +69,7 @@ async def manage_practice(message: types.Message, state: FSMContext):
         for i in data:
             start, stop = await jobs.datetime_op(i[6], i[7])
             keyboard = InlineKeyboardMarkup()
-            keyboard.insert(
+            keyboard.add(
                 InlineKeyboardButton('Управлять',
                                      callback_data=f'{i[2]}'))
             file = AsyncPath(str(i[8]))
@@ -267,7 +267,7 @@ async def get_current_practice(message: types.Message, state: FSMContext):
         for i in data:
             start, stop = await jobs.datetime_op(i[6], i[7])
             inline_keyboard = InlineKeyboardMarkup()
-            inline_keyboard.insert(
+            inline_keyboard.add(
                 InlineKeyboardButton('Участвовать!📨',
                                      callback_data=f'{i[2]}'))
             file = AsyncPath(str(i[8]))
@@ -505,7 +505,7 @@ async def practice_requests_kas(message: types.Message, state: FSMContext):
             reply_markup=keyboards.back)
         for i in data:
             inline_keyboard = InlineKeyboardMarkup()
-            inline_keyboard.insert(
+            inline_keyboard.add(
                 InlineKeyboardButton('Смотреть заявки👀',
                                      callback_data=f'{i[0]}'))
             await message.answer(
@@ -654,7 +654,7 @@ async def practice_requests_cm(message: types.Message, state: FSMContext):
             reply_markup=keyboards.back)
         for i in data:
             inline_keyboard = InlineKeyboardMarkup()
-            inline_keyboard.insert(
+            inline_keyboard.add(
                 InlineKeyboardButton('Смотреть заявки👀',
                                      callback_data=f'{i[0]}'))
             await message.answer(
@@ -693,7 +693,7 @@ async def practice_requests_show_cm(callback: types.CallbackQuery,
                 tg_id=int(callback.from_user.id))
             chat_id = await jobs.get_region_channel(region)
             vote_keyboard = InlineKeyboardMarkup()
-            vote_keyboard.insert(
+            vote_keyboard.add(
                 InlineKeyboardButton('Поставить Лайк 👍🏻',
                                      callback_data=f'bp_vote_'
                                                    f'{data["bp_mr_id"]}'))
@@ -981,7 +981,7 @@ async def practice_get_top(message: types.Message, state: FSMContext):
             reply_markup=keyboards.back)
         for i in data:
             keyboard = InlineKeyboardMarkup()
-            keyboard.insert(
+            keyboard.add(
                 InlineKeyboardButton('ТОП-10',
                                      callback_data=f'top10_{i[0]}'))
             file = AsyncPath(str(i[8]))
@@ -1032,7 +1032,7 @@ async def practice_to_archive(message: types.Message, state: FSMContext):
             reply_markup=keyboards.back)
         for i in data:
             keyboard = InlineKeyboardMarkup()
-            keyboard.insert(
+            keyboard.add(
                 InlineKeyboardButton('В АРХИВ!',
                                      callback_data=f'archive_{i[0]}'))
             file = AsyncPath(str(i[8]))

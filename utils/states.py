@@ -39,6 +39,10 @@ class UserState(StatesGroup):
 
     tools_dmp_search = State()
 
+    tools_select_pss = State()
+    tools_input_fact_pss = State()
+    tools_input_other_pss = State()
+
     kpi_menu = State()
     kpi_search_tt = State()
 

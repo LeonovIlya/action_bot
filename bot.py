@@ -15,8 +15,8 @@ from users.handlers import register_handlers_users
 from utils.jobs import check_bp_start, check_bp_stop, check_mp_start, \
     check_mp_stop, clear_logs, check_redis
 
-
 logger = logging.getLogger('bot')
+# отключение логов apscheduler
 logging.getLogger('apscheduler.executors.default').propagate = False
 logging.basicConfig(filename=config.LOG_FILE,
                     encoding='UTF-8',
@@ -28,44 +28,40 @@ logging.basicConfig(filename=config.LOG_FILE,
 
 def set_scheduled_jobs():
     scheduler.add_job(func=check_bp_stop,
-                      # trigger='cron',
-                      # hour=3,
-                      # minute=5,
-                      trigger='interval',
-                      hours=1,
+                      trigger='cron',
+                      hour=0,
+                      minute=3,
                       args=(dp,))
     scheduler.add_job(func=check_mp_stop,
                       trigger='cron',
-                      hour=3,
-                      minute=5,
+                      hour=0,
+                      minute=4,
                       args=(dp,))
     scheduler.add_job(func=check_bp_start,
-                      # trigger='cron',
-                      # hour=3,
-                      # minute=10,
-                      trigger='interval',
-                      hours=1,
+                      trigger='cron',
+                      hour=0,
+                      minute=1,
                       args=(dp,))
     scheduler.add_job(func=check_mp_start,
                       trigger='cron',
-                      hour=3,
-                      minute=10,
+                      hour=0,
+                      minute=2,
                       args=(dp,))
     scheduler.add_job(func=check_redis,
                       trigger='interval',
                       minutes=1,
                       args=(dp,))
     scheduler.add_job(func=clear_logs,
-                      trigger='interval',
-                      days=30,
+                      trigger='cron',
+                      year='*',
+                      month='*',
+                      day='last',
                       args=(dp,))
 
 
-async def start():
+async def main():
     logger.info('>>> Starting bot')
-
     await db.create_connection()
-
     register_handlers_admin_manager(dp)
     register_handlers_users(dp)
     register_handlers_best_practice(dp)
@@ -75,24 +71,24 @@ async def start():
     register_handlers_ratings(dp)
     register_handlers_shop(dp)
     register_handlers_tools(dp)
-
     set_scheduled_jobs()
+    scheduler.start()
+    await dp.start_polling(bot)
 
-    try:
-        scheduler.start()
-        await dp.start_polling(bot)
-    finally:
-        await db.close()
-        await dp.storage.close()
-        await dp.storage.wait_closed()
-        await bot.session.close()
+
+async def on_shutdown():
+    dp.stop_polling()
+    await db.close()
+    await dp.storage.close()
+    await dp.storage.wait_closed()
+    await bot.session.close()
 
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(start())
+        loop.run_until_complete(main())
     except KeyboardInterrupt:
-        logger.info('>>> Bot stopped by keyboard')
+        logger.info('>>> Bot has been stopped!')
     finally:
         loop.close()

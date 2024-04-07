@@ -3,8 +3,6 @@ import hashlib
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
-    InputMediaPhoto
 
 import config
 from loader import db
