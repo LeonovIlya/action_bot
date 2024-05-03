@@ -61,9 +61,29 @@ async def my_profile(message: types.Message, state: FSMContext):
                 reply_markup=keyboards.back)
 
 
-@decorators.error_handler_message
 async def career(message: types.Message, state: FSMContext):
-    path = './files/career/career_growth.pdf'
+    await message.answer(text="Выберите пункт из меню:",
+                         reply_markup=keyboards.career_menu)
+
+
+@decorators.error_handler_message
+async def career_story(message: types.Message, state: FSMContext):
+    path = './files/career/career_story.pdf'
+    file = AsyncPath(path)
+    if await file.is_file():
+        await message.answer_chat_action(action='upload_document')
+        async with aiofiles.open(file, 'rb') as file:
+            await message.answer_document(file,
+                                          reply_markup=keyboards.back)
+    else:
+        await message.answer(
+            text='❗ Файл не найден!',
+            reply_markup=keyboards.back)
+
+
+@decorators.error_handler_message
+async def career_map(message: types.Message, state: FSMContext):
+    path = './files/career/career_map.pdf'
     file = AsyncPath(path)
     if await file.is_file():
         await message.answer_chat_action(action='upload_document')
@@ -171,6 +191,16 @@ def register_handlers_profile(dp: Dispatcher):
     dp.register_message_handler(
         career,
         text='Карьерный рост🔝',
+        state=(UserState.profile_menu,
+               UserState.profile_menu_cm))
+    dp.register_message_handler(
+        career_story,
+        text='Истории успеха🏆',
+        state=(UserState.profile_menu,
+               UserState.profile_menu_cm))
+    dp.register_message_handler(
+        career_map,
+        text='Карьерная карта📋',
         state=(UserState.profile_menu,
                UserState.profile_menu_cm))
     dp.register_message_handler(

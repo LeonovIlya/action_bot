@@ -15,7 +15,7 @@ manage_user_menu = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-# стартовое меню для мерчендайзеров и KAS
+# стартовое меню для мерчендайзеров и супервайзера
 start_menu_mr = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Инструменты🛠'), KeyboardButton(text='KPI📈')],
     [KeyboardButton(text='Рейтинги📊'), KeyboardButton(text='Практики🗣')],
@@ -24,7 +24,7 @@ start_menu_mr = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-# стартовое меню для CitiManager
+# стартовое меню для ситименеджера
 start_menu_cm = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Инструменты🛠'), KeyboardButton(text='KPI📈')],
     [KeyboardButton(text='МП🤩'), KeyboardButton(text='Практики🗣')],
@@ -49,7 +49,7 @@ kpi_menu = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-# меню рейтингов для мерчендайзера и каса
+# меню рейтингов для мерчендайзера и супервайзера
 ratings_menu_mr = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Мои рейтинги📊'),
      KeyboardButton(text='Результаты тестов📋')],
@@ -65,7 +65,7 @@ practice_menu_mr = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
-# меню практик для каса
+# меню практик для супервайзера
 practice_menu_kas = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Смотреть заявки📬')],
     [KeyboardButton(text='Предложения📝')],
@@ -83,6 +83,7 @@ practice_menu_cm = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     one_time_keyboard=True)
 
+# меню голосований ситименеджера
 vote_menu_cm = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Получить ТОП-10🔟')],
     [KeyboardButton(text='Отправить в архив🗃')],
@@ -116,6 +117,14 @@ profile_menu_cm = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Кадровые документы🗃')],
     [KeyboardButton(text='Выйти из бота🚪')],
     [KeyboardButton(text='Главное меню📱')]],
+    resize_keyboard=True,
+    one_time_keyboard=True)
+
+# меню карьерного роста
+career_menu = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Истории успеха🏆'),
+     KeyboardButton(text='Карьерная карта📋')],
+    [KeyboardButton(text='Назад↩')]],
     resize_keyboard=True,
     one_time_keyboard=True)
 
