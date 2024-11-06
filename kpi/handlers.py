@@ -26,8 +26,20 @@ async def replace_symbols(text: str) -> str:
         .replace('-', '\\-') \
         .replace('*', '\\*') \
         .replace('@', '\\@') \
+        .replace('[', '\\[') \
+        .replace(']', '\\]') \
+        .replace('~', '\\~') \
+        .replace('`', '\\`') \
+        .replace('>', '\\>') \
+        .replace('#', '\\#') \
+        .replace('+', '\\+') \
+        .replace('=', '\\=') \
+        .replace('|', '\\|') \
+        .replace('{', '\\{') \
+        .replace('}', '\\}') \
         .replace('(', '\\(') \
         .replace(')', '\\)') \
+        .replace('!', '\\!') \
         .replace('&', '\\&')
 
 

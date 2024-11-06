@@ -38,16 +38,17 @@ async def get_value(value: str, table: str) -> str:
     return f"SELECT {value} FROM {table}"
 
 
-async def ratings_query_all(column_name: str, position: str) -> str:
-    return f"SELECT rn, cnt FROM ( SELECT tg_id, ROW_NUMBER() OVER (" \
-           f"ORDER BY {column_name} DESC NULLS LAST) AS rn, " \
+async def ratings_query_all(column_name: str, sort_type: str,
+                            position: str) -> str:
+    return f"SELECT rn, cnt FROM ( SELECT tg_id, DENSE_RANK() OVER (" \
+           f"ORDER BY {column_name} {sort_type} NULLS LAST) AS rn, " \
            f"COUNT() OVER () AS cnt FROM users WHERE position = '{position}')"
 
 
-async def ratings_query(column_name: str, position: str,
+async def ratings_query(column_name: str, sort_type: str, position: str,
                         where_name: str, where_value: str) -> str:
-    return f"SELECT rn, cnt FROM(SELECT tg_id, ROW_NUMBER() OVER" \
-           f"(ORDER BY {column_name} DESC NULLS LAST) AS rn," \
+    return f"SELECT rn, cnt FROM(SELECT tg_id, DENSE_RANK() OVER" \
+           f"(ORDER BY {column_name} {sort_type} NULLS LAST) AS rn," \
            f" COUNT() OVER () AS cnt" \
            f" FROM users WHERE position = '{position}'" \
            f" AND {where_name} = '{where_value}')"

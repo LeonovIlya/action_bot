@@ -6,21 +6,26 @@ from users.handlers import get_value_by_tgig
 from utils import decorators, keyboards, queries
 from utils.states import UserState
 
-RATINGS_DICT = {'[%_pss]': '% PSS', '[%_osa]': '% OSA', '[%_tt]': '% TT',
-                '[%_visits]': '% Visits', 'isa_osa': 'ISA-OSA'}
+RATINGS_TUPLE = (('[%_pss]', '% PSS', 'DESC'),
+                ('[%_osa]', '% OSA', 'DESC'),
+                ('[%_tt]', '% TT', 'DESC'),
+                ('[%_visits]', '% Visits', 'DESC'),
+                ('isa_osa = 0, isa_osa', 'ISA-OSA', 'ASC'))
 
 
-async def get_result_rating(rating_name: str,
+async def get_result_rating(column_name: str,
+                            sort_type: str,
                             position: str,
-                            select_name: str,
+                            where_name: str,
                             tg_id: int):
     return await db.get_one(
         await queries.ratings_query(
-            column_name=rating_name,
+            column_name=column_name,
+            sort_type=sort_type,
             position=position,
-            where_name=select_name,
+            where_name=where_name,
             where_value=await get_value_by_tgig(
-                value=select_name,
+                value=where_name,
                 tg_id=tg_id)),
         tg_id=tg_id)
 
@@ -39,29 +44,33 @@ async def ratings_mr(message: types.Message, state: FSMContext):
         tg_id=tg_id)
     match position:
         case 'mr':
-            for i, k in RATINGS_DICT.items():
+            for i in RATINGS_TUPLE:
                 result1 = await db.get_one(
                     await queries.ratings_query_all(
-                        column_name=i,
+                        column_name=i[0],
+                        sort_type=i[2],
                         position=position),
                     tg_id=tg_id)
                 result2 = await get_result_rating(
-                    rating_name=i,
+                    column_name=i[0],
+                    sort_type=i[2],
                     position=position,
-                    select_name='region',
+                    where_name='region',
                     tg_id=tg_id)
                 result3 = await get_result_rating(
-                    rating_name=i,
+                    column_name=i[0],
+                    sort_type=i[2],
                     position=position,
-                    select_name='kas',
+                    where_name='kas',
                     tg_id=tg_id)
                 result4 = await get_result_rating(
-                    rating_name=i,
+                    column_name=i[0],
+                    sort_type=i[2],
                     position=position,
-                    select_name='citimanager',
+                    where_name='citimanager',
                     tg_id=tg_id)
                 await message.answer(
-                    text=f'<b>Ваше место по {k}:</b>\n'
+                    text=f'<b>Ваше место по {i[1]}:</b>\n'
                          f'<b>По КАС:</b> '
                          f'{result3[0]} из {result3[1]}\n'
                          f'<b>По СитиМенеджеру:</b> '
@@ -72,24 +81,27 @@ async def ratings_mr(message: types.Message, state: FSMContext):
                          f'{result1[0]} из {result1[1]}\n',
                     reply_markup=keyboards.back)
         case 'kas':
-            for i, k in RATINGS_DICT.items():
+            for i in RATINGS_TUPLE:
                 result1 = await db.get_one(
                     await queries.ratings_query_all(
-                        column_name=i,
+                        column_name=i[0],
+                        sort_type=i[2],
                         position=position),
                     tg_id=tg_id)
                 result2 = await get_result_rating(
-                    rating_name=i,
+                    column_name=i[0],
+                    sort_type=i[2],
                     position=position,
-                    select_name='region',
+                    where_name='region',
                     tg_id=tg_id)
                 result4 = await get_result_rating(
-                    rating_name=i,
+                    column_name=i[0],
+                    sort_type=i[2],
                     position=position,
-                    select_name='citimanager',
+                    where_name='citimanager',
                     tg_id=tg_id)
                 await message.answer(
-                    text=f'<b>Ваше место по {k}:</b>\n'
+                    text=f'<b>Ваше место по {i[1]}:</b>\n'
                          f'<b>По СитиМенеджеру:</b> '
                          f'{result4[0]} из {result4[1]}\n'
                          f'<b>По региону:</b> '
