@@ -194,10 +194,10 @@ pss_calc_keyboard.row(
                          callback_data='pss_calc_2'))
 pss_calc_keyboard.add(
     InlineKeyboardButton('Sheba ПАУЧ',
-                         callback_data='pss_calc_2'))
+                         callback_data='pss_calc_3'))
 pss_calc_keyboard.row(
     InlineKeyboardButton('Whiskas СУХОЙ',
-                         callback_data='pss_calc_2'),
+                         callback_data='pss_calc_3'),
     InlineKeyboardButton('Perfect Fit СУХОЙ',
                          callback_data='pss_calc_1'))
 

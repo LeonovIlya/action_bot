@@ -7,10 +7,10 @@ from utils import decorators, keyboards, queries
 from utils.states import UserState
 
 RATINGS_TUPLE = (('[%_pss]', '% PSS', 'DESC'),
-                ('[%_osa]', '% OSA', 'DESC'),
-                ('[%_tt]', '% TT', 'DESC'),
-                ('[%_visits]', '% Visits', 'DESC'),
-                ('isa_osa = 0, isa_osa', 'ISA-OSA', 'ASC'))
+                 ('[%_osa]', '% OSA', 'DESC'),
+                 ('[%_tt]', '% TT', 'DESC'),
+                 ('[%_visits]', '% Visits', 'DESC'),
+                 ('isa_osa', 'ISA-OSA', 'ASC'))
 
 
 async def get_result_rating(column_name: str,
@@ -61,25 +61,32 @@ async def ratings_mr(message: types.Message, state: FSMContext):
                     column_name=i[0],
                     sort_type=i[2],
                     position=position,
-                    where_name='kas',
+                    where_name='citimanager',
                     tg_id=tg_id)
                 result4 = await get_result_rating(
                     column_name=i[0],
                     sort_type=i[2],
                     position=position,
-                    where_name='citimanager',
+                    where_name='kas',
                     tg_id=tg_id)
-                await message.answer(
-                    text=f'<b>Ваше место по {i[1]}:</b>\n'
-                         f'<b>По КАС:</b> '
-                         f'{result3[0]} из {result3[1]}\n'
-                         f'<b>По СитиМенеджеру:</b> '
-                         f'{result4[0]} из {result4[1]}\n'
-                         f'<b>По региону:</b> '
-                         f'{result2[0]} из {result2[1]}\n'
-                         f'<b>По стране:</b> '
-                         f'{result1[0]} из {result1[1]}\n',
-                    reply_markup=keyboards.back)
+                if (result1 or result2 or result3 or result4) is not None:
+                    await message.answer(
+                        text=f'<b>Ваше место по {i[1]}:</b>\n'
+                             f'<b>По КАС:</b> '
+                             f'{result4[0]} из {result4[1]}\n'
+                             f'<b>По СитиМенеджеру:</b> '
+                             f'{result3[0]} из {result3[1]}\n'
+                             f'<b>По региону:</b> '
+                             f'{result2[0]} из {result2[1]}\n'
+                             f'<b>По стране:</b> '
+                             f'{result1[0]} из {result1[1]}\n',
+                        reply_markup=keyboards.back)
+                else:
+                    await message.answer(
+                        text=f'<b>Ваш показатель по {i[1]} = 0, в рейтинге '
+                             f'не учитывается. '
+                             f'</b>\n',
+                        reply_markup=keyboards.back)
         case 'kas':
             for i in RATINGS_TUPLE:
                 result1 = await db.get_one(
@@ -94,21 +101,28 @@ async def ratings_mr(message: types.Message, state: FSMContext):
                     position=position,
                     where_name='region',
                     tg_id=tg_id)
-                result4 = await get_result_rating(
+                result3 = await get_result_rating(
                     column_name=i[0],
                     sort_type=i[2],
                     position=position,
                     where_name='citimanager',
                     tg_id=tg_id)
-                await message.answer(
-                    text=f'<b>Ваше место по {i[1]}:</b>\n'
-                         f'<b>По СитиМенеджеру:</b> '
-                         f'{result4[0]} из {result4[1]}\n'
-                         f'<b>По региону:</b> '
-                         f'{result2[0]} из {result2[1]}\n'
-                         f'<b>По стране:</b> '
-                         f'{result1[0]} из {result1[1]}\n',
-                    reply_markup=keyboards.back)
+                if (result1 or result2 or result3) is not None:
+                    await message.answer(
+                        text=f'<b>Ваше место по {i[1]}:</b>\n'
+                             f'<b>По СитиМенеджеру:</b> '
+                             f'{result3[0]} из {result3[1]}\n'
+                             f'<b>По региону:</b> '
+                             f'{result2[0]} из {result2[1]}\n'
+                             f'<b>По стране:</b> '
+                             f'{result1[0]} из {result1[1]}\n',
+                        reply_markup=keyboards.back)
+                else:
+                    await message.answer(
+                        text=f'<b>Ваш показатель по {i[1]} = 0, в рейтинге '
+                             f'не учитывается. '
+                             f'</b>\n',
+                        reply_markup=keyboards.back)
 
 
 async def tests_results_mr(message: types.Message):

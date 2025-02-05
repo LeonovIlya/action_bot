@@ -40,15 +40,16 @@ async def get_value(value: str, table: str) -> str:
 
 async def ratings_query_all(column_name: str, sort_type: str,
                             position: str) -> str:
-    return f"SELECT rn, cnt FROM ( SELECT tg_id, DENSE_RANK() OVER (" \
+    return f"SELECT rn, cnt FROM (SELECT tg_id, DENSE_RANK() OVER (" \
            f"ORDER BY {column_name} {sort_type} NULLS LAST) AS rn, " \
-           f"COUNT() OVER () AS cnt FROM users WHERE position = '{position}')"
+           f"COUNT() OVER () AS cnt FROM users WHERE" \
+           f" position = '{position}' AND {column_name} <> 0)"
 
 
 async def ratings_query(column_name: str, sort_type: str, position: str,
                         where_name: str, where_value: str) -> str:
-    return f"SELECT rn, cnt FROM(SELECT tg_id, DENSE_RANK() OVER" \
-           f"(ORDER BY {column_name} {sort_type} NULLS LAST) AS rn," \
-           f" COUNT() OVER () AS cnt" \
-           f" FROM users WHERE position = '{position}'" \
-           f" AND {where_name} = '{where_value}')"
+    return f"SELECT rn, cnt FROM (SELECT tg_id, DENSE_RANK() OVER (" \
+           f"ORDER BY {column_name} {sort_type} NULLS LAST) AS rn, " \
+           f"COUNT() OVER () AS cnt FROM users WHERE" \
+           f" position = '{position}' AND {column_name} <> 0 AND" \
+           f" {where_name} = '{where_value}' )"
