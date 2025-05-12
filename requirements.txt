@@ -1,8 +1,11 @@
-aiogram==2.25.1
-aiosqlite
 aiofiles==23.2.1
+aiohttp
+aiogram==2.25.1
 aiopath
+aiosqlite
 APScheduler==3.10.4
+gspread_asyncio
 openpyxl
 python-dotenv
 redis==5.0.0
+oauth2client

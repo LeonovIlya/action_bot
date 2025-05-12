@@ -246,7 +246,7 @@ async def admin_get_info(message: types.Message, state: FSMContext):
                  f'<b>grade:</b> {info[7]}\n'
                  f'<b>points:</b> {info[8]}\n'
                  f'<b>kas:</b> {info[9]}\n'
-                 f'<b>citimanger:</b> {info[10]}\n\n'
+                 f'<b>citimanager:</b> {info[10]}\n\n'
                  f'<b>plan_pss:</b> {info[11]:.2%}\n'
                  f'<b>fact_pss:</b> {info[12]:.2%}\n'
                  f'<b>%_pss:</b> {info[13]:.2%}\n'
