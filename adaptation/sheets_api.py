@@ -1,9 +1,11 @@
 import asyncio
+import aiosqlite
 from gspread_asyncio import AsyncioGspreadClientManager, AsyncioGspreadSpreadsheet
 from oauth2client.service_account import ServiceAccountCredentials
 from pathlib import Path
 from datetime import date, timedelta, datetime
 from typing import Optional
+
 from config import G_API_FILE, G_API_LINK
 
 from isdayoff import AsyncProdCalendar
@@ -12,31 +14,7 @@ from workdays import add_working_days
 CREDENTIALS_PATH = G_API_FILE
 SPREADSHEET_URL = G_API_LINK
 
-DAYS_DELTA = {1: 6, 7: 7, 14: 8, 21: 9, 42: 10}
-
-
-async def add_working_days(
-        start_date: date,
-        days_to_add: int,
-        calendar: AsyncProdCalendar,
-        callback: Optional[callable] = None) -> date:
-    current_date = start_date
-    added_days = 0
-    while added_days < days_to_add:
-        current_date += timedelta(days=1)
-        day_type = await calendar.check(current_date)
-        if day_type == 0:
-            added_days += 1
-            if callback:
-                await callback(current_date, added_days, days_to_add)
-    return current_date
-
-
-async def parse_date(date_str: str) -> Optional[datetime]:
-    try:
-        return datetime.strptime(date_str, "%d.%m.%Y")
-    except (ValueError, TypeError):
-        return None
+DB_FILE = '../data.db'
 
 
 class GoogleSheetsProcessor:
@@ -61,34 +39,40 @@ class GoogleSheetsProcessor:
             raise ValueError("URL таблицы не может быть пустым")
         try:
             agc = await self.client_manager.authorize()
+            db_conn = await aiosqlite.connect(DB_FILE)
             spreadsheet = await agc.open_by_url(spreadsheet_url)
             worksheet = await spreadsheet.get_worksheet(0)
+
             row_num = 2
             processed_rows = 0
             skipped_rows = 0
             while True:
-                e_cell = await worksheet.cell(row_num, 5)
-                if not e_cell.value:
+                cell_a_data = await worksheet.cell(row_num, 1)
+                if not cell_a_data.value:
                     break
-                r_cell = await worksheet.cell(row_num, 18)
-                if r_cell.value == "1":
+
+                cell_s_data = await worksheet.cell(row_num, 19)
+                if cell_s_data.value == "1":
                     skipped_rows += 1
                     row_num += 1
                     continue
-                if not r_cell.value:
-                    e_cell = await worksheet.cell(row_num, 5)
-                    e_cell_value = await parse_date(e_cell.value)
-                    for i, k in DAYS_DELTA.items():
-                        async with AsyncProdCalendar() as calendar:
-                            result = await add_working_days(e_cell_value, i, calendar)
-                            await worksheet.update_cell(row_num, k, result.strftime('%d-%m-%Y'))
+
+                if not cell_s_data.value:
+                    row_data = await worksheet.row_values(row_num)
+                    await db_conn.execute('''INSERT INTO adaptation (
+                    intern_name, intern_email, mentor_name, mentor_ter_num, 
+                    date_start) VALUES (?, ?, ?, ?, ?)''', (row_data[0],
+                                                            row_data[1],
+                                                            row_data[3],
+                                                            row_data[4],
+                                                            row_data[5]))
+                    await db_conn.commit()
+                    await worksheet.update_cell(row_num, 19, '1')
                     processed_rows += 1
-                row_num += 1
             return {
                 'processed_rows': processed_rows,
                 'skipped_rows': skipped_rows,
-                'last_processed_row': row_num - 1
-            }
+                'last_processed_row': row_num - 1}
         except Exception as e:
             raise ValueError(f"Ошибка обработки таблицы: {str(e)}")
 
