@@ -4,6 +4,7 @@ from pathlib import Path
 import aiofiles
 import aiohttp
 import asyncio
+from typing import Optional, Dict, List
 
 
 class ServiceNotRespond(Exception):
@@ -18,41 +19,82 @@ class DayType(IntEnum):
 class AsyncProdCalendar:
     URL = 'https://isdayoff.ru/'
     DATE_FORMAT = '%Y%m%d'
-    CACHE_FILE_FORMAT = '%sisdayoff%i%s.txt'
+    CACHE_FILE_FORMAT = 'isdayoff_{year}_{locale}.txt'
     LOCALES = ('ru', 'ua', 'kz', 'by', 'us')
 
-    def __init__(self, locale: str = 'ru', cache: bool = True, cache_dir: str = 'cache/',
-                 cache_year: int = date.today().year, freshness: timedelta = timedelta(days=30)):
+    def __init__(self, locale: str = 'ru', cache: bool = True,
+                 cache_dir: str = 'cache/',
+                 freshness: timedelta = timedelta(days=30)):
         if locale not in self.LOCALES:
-            raise ValueError('locale must be in ' + str(self.LOCALES))
+            raise ValueError(f'Locale must be one of {self.LOCALES}')
+
         self.locale = locale
         self.cache = cache
-        self.cache_dir = cache_dir
+        self.cache_dir = Path(cache_dir)
         self.freshness = freshness
-        self._cache_year = cache_year
-        self.session = None
-
-    async def __aenter__(self):
-        self.session = aiohttp.ClientSession()
-        if self.cache:
-            await self.cache_year(self._cache_year, forced=False)
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if self.session:
-            await self.session.close()
+        self._memory_cache: Dict[int, List[int]] = {}
 
     async def check(self, day: date) -> DayType:
-        if self.cache:
-            return await self._get_cache(day)
-        else:
-            async with self.session.get(
+        if not self.cache:
+            return await self._fetch_with_temp_session(day)
+        year = day.year
+        day_of_year = day.timetuple().tm_yday - 1
+        if year in self._memory_cache:
+            return DayType(self._memory_cache[year][day_of_year])
+        cache_file = self._get_cache_file_path(year)
+        try:
+            if await self._load_cache_file(cache_file):
+                return DayType(self._memory_cache[year][day_of_year])
+        except (FileNotFoundError, ValueError):
+            pass
+
+        return await self._download_with_temp_session(year, day_of_year)
+
+    async def _fetch_with_temp_session(self, day: date) -> DayType:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
                     self.URL + day.strftime(self.DATE_FORMAT),
                     params={'cc': self.locale}
             ) as resp:
                 if resp.status != 200:
-                    raise ServiceNotRespond
+                    raise ServiceNotRespond("API не отвечает")
                 return DayType(int(await resp.text()))
+
+    async def _download_with_temp_session(self, year: int,
+                                          day_idx: int) -> DayType:
+        self.cache_dir.mkdir(exist_ok=True, parents=True)
+        cache_file = self._get_cache_file_path(year)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                    self.URL + 'api/getdata',
+                    params={'year': year, 'cc': self.locale}
+            ) as resp:
+                if resp.status != 200:
+                    raise ServiceNotRespond(
+                        f"Ошибка при загрузке данных за {year} год")
+                content = await resp.text()
+                self._memory_cache[year] = [int(c) for c in content]
+                async with aiofiles.open(cache_file, 'w') as f:
+                    await f.write(datetime.now().isoformat() + '\n')
+                    await f.write(content)
+        return DayType(self._memory_cache[year][day_idx])
+
+    def _get_cache_file_path(self, year: int) -> Path:
+        filename = self.CACHE_FILE_FORMAT.format(year=year, locale=self.locale)
+        return self.cache_dir / filename
+
+    async def _load_cache_file(self, cache_file: Path) -> bool:
+        if not cache_file.exists():
+            raise FileNotFoundError(f"Файл кэша не найден: {cache_file}")
+        async with aiofiles.open(cache_file, 'r') as f:
+            first_line = await f.readline()
+            cache_date = datetime.fromisoformat(first_line.strip())
+            if cache_date + self.freshness < datetime.now():
+                raise ValueError("Кэш устарел")
+            content = await f.read()
+            year = int(cache_file.stem.split('_')[1])
+            self._memory_cache[year] = [int(c) for c in content]
+            return True
 
     async def today(self) -> DayType:
         return await self.check(date.today())
@@ -66,49 +108,3 @@ class AsyncProdCalendar:
         while await self.check(day) != dtype:
             day -= timedelta(days=1)
         return day
-
-    async def cache_year(self, year: int, forced: bool = True) -> Path:
-        Path(self.cache_dir).mkdir(exist_ok=True, parents=True)
-        cache_file = Path(self.CACHE_FILE_FORMAT % (self.cache_dir, year, self.locale))
-
-        if forced or not cache_file.is_file():
-            await self._write_cache(year, cache_file)
-        elif not await self._is_cache_fresh(cache_file):
-            await self._write_cache(year, cache_file)
-
-        return cache_file.absolute()
-
-    async def _write_cache(self, year: int, cache_file: Path):
-        async with self.session.get(
-                self.URL + 'api/getdata',
-                params={'year': year, 'cc': self.locale}
-        ) as resp:
-            if resp.status != 200:
-                raise ServiceNotRespond()
-
-            async with aiofiles.open(cache_file.absolute(), 'w') as f:
-                await f.write(datetime.now().isoformat() + '\n')
-                await f.write(await resp.text())
-
-    async def _is_cache_fresh(self, cache_file: Path) -> bool:
-        async with aiofiles.open(cache_file.absolute()) as f:
-            cache_date = datetime.fromisoformat((await f.readline()).strip())
-            return cache_date + self.freshness >= datetime.now()
-
-    async def _get_cache(self, day: date) -> DayType:
-        async with aiofiles.open(await self.cache_year(day.year, forced=False)) as f:
-            await f.readline()
-            content = await f.read()
-            return DayType(int(content[day.timetuple().tm_yday - 1]))
-
-
-async def example_usage():
-    async with AsyncProdCalendar() as prodcal:
-        for i in range(1, 30):
-            check_date = date(2025, 6, i)
-            result = await prodcal.check(check_date)
-            print(f"{check_date} - {'Выходной' if result else 'рабочий день'}")
-
-
-if __name__ == "__main__":
-    asyncio.run(example_usage())

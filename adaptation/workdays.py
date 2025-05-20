@@ -1,8 +1,15 @@
 import asyncio
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from isdayoff import AsyncProdCalendar
+
+
+async def parse_date(date_str: str) -> Optional[datetime]:
+    try:
+        return datetime.strptime(date_str, "%d.%m.%Y")
+    except Exception as e:
+        raise ValueError(f"Ошибка парсинга даты: {str(e)}")
 
 
 async def add_working_days(
@@ -23,20 +30,3 @@ async def add_working_days(
                 await callback(current_date, added_days, days_to_add)
 
     return current_date
-
-
-# Пример использования
-async def example_usage():
-    async with AsyncProdCalendar() as calendar:
-        start_date = date(2025, 4, 30)
-        result_date = await add_working_days(start_date, 10, calendar)
-
-        print(f"Начальная дата: {start_date}")
-        print(f"Дата после добавления 10 рабочих дней: {result_date}")
-
-
-async def main():
-    await example_usage()
-
-if __name__ == "__main__":
-    asyncio.run(main())
