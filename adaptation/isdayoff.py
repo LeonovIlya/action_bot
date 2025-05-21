@@ -33,6 +33,16 @@ class AsyncProdCalendar:
         self.cache_dir = Path(cache_dir)
         self.freshness = freshness
         self._memory_cache: Dict[int, List[int]] = {}
+        self._session: Optional[aiohttp.ClientSession] = None
+
+    async def __aenter__(self):
+        self._session = aiohttp.ClientSession()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._session and not self._session.closed:
+            await self._session.close()
+        self._session = None
 
     async def check(self, day: date) -> DayType:
         if not self.cache:

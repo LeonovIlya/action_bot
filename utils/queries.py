@@ -29,6 +29,11 @@ LIKES_UP = "UPDATE best_practice_mr SET likes = likes + 1 WHERE id = ?"
 TOP10 = "SELECT * FROM best_practice_mr WHERE bp_id = ? AND posted = True " \
         "ORDER BY likes DESC LIMIT 10"
 
+GS_2_DB = "INSERT INTO adaptation (" \
+                "intern_name, intern_email, mentor_name, mentor_ter_num," \
+                "date_start, date_1day, date_1week, date_2week, " \
+                "date_3week, date_6week) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+
 
 async def update_value(table: str, column_name: str, where_name: str) -> str:
     return f"UPDATE {table} SET {column_name} = ? WHERE {where_name} = ?"

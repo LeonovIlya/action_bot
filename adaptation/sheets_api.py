@@ -10,7 +10,7 @@ from config import G_API_FILE, G_API_LINK
 
 from isdayoff import AsyncProdCalendar
 from workdays import add_working_days, parse_date
-
+from utils import queries
 
 CREDENTIALS_PATH = G_API_FILE
 SPREADSHEET_URL = G_API_LINK
@@ -40,29 +40,54 @@ class GoogleSheetsProcessor:
     async def all_data_to_db(self, spreadsheet_url: str) -> dict:
         if not spreadsheet_url:
             raise ValueError("URL таблицы не может быть пустым")
-        # try:
-        agc = await self.client_manager.authorize()
-        spreadsheet = await agc.open_by_url(spreadsheet_url)
-        worksheet = await spreadsheet.get_worksheet(0)
-        db_conn = await aiosqlite.connect(DB_FILE)
-        all_data = await worksheet.get_all_values()
+        try:
+            agc = await self.client_manager.authorize()
+            spreadsheet = await agc.open_by_url(spreadsheet_url)
+            worksheet = await spreadsheet.get_worksheet(0)
+            db_conn = await aiosqlite.connect(DB_FILE)
 
-        for i in all_data[1:]:
-            start_date = await parse_date(i[5])
-            days_to_add = []
-            for k in DAYS_TUPLE:
-                day_to_add = await add_working_days(start_date, k,
-                                         AsyncProdCalendar())
-                days_to_add.append(day_to_add)
-            await db_conn.execute('''INSERT INTO adaptation (
-                intern_name, intern_email, mentor_name, mentor_ter_num,
-                date_start, date_1day, date_1week, date_2week, 
-                date_3week, date_6week) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                                  (i[0], i[1], i[3], i[4], i[5], *days_to_add))
-            await db_conn.commit()
-        await db_conn.close()
+            async with AsyncProdCalendar() as calendar:
+                all_data = await worksheet.get_all_values()
+                updates = []
+                db_data = []
 
+                for row_idx, row_data in enumerate(all_data[1:], start=2):
+                    try:
+                        start_date = await parse_date(row_data[5])
+                        days_to_add = []
+                        for i in DAYS_TUPLE:
+                            day_to_add = await add_working_days(start_date, i,
+                                                                calendar)
+                            days_to_add.append(day_to_add)
 
+                        db_data.append((
+                            row_data[0], row_data[1], row_data[3], row_data[4],
+                            row_data[5], *days_to_add))
+                        updates.append((row_idx, 19, "1"))
+
+                    except Exception as e:
+                        print(f"Ошибка при обработке строки {row_idx}: {e}")
+                        updates.append((row_idx, 19, "ERROR"))
+                        continue
+
+                await db_conn.executemany(queries.GS_2_DB, db_data)
+                await db_conn.commit()
+
+                try:
+                    await worksheet.batch_update([{
+                        'range': f"R{row}C{col}",
+                        'values': [[value]]
+                    } for row, col, value in updates])
+                except AttributeError:
+                    for row, col, value in updates:
+                        await worksheet.update_cell(row, col, value)
+
+            await db_conn.close()
+            return {
+                "status": "success",
+                "processed": len(db_data),
+                "errors": len(all_data[1:]) - len(db_data)
+            }
 
 
             # row_num = 2
@@ -95,28 +120,26 @@ class GoogleSheetsProcessor:
             #     'processed_rows': processed_rows,
             #     'skipped_rows': skipped_rows,
             #     'last_processed_row': row_num - 1}
-        # except Exception as e:
-        #     raise ValueError(f"Ошибка обработки таблицы: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Ошибка обработки таблицы: {str(e)}")
 
 
 async def main():
-    # try:
-    start_time = datetime.now()
-    processor = GoogleSheetsProcessor(CREDENTIALS_PATH)
-    await processor.all_data_to_db(SPREADSHEET_URL)
-    # print(f"Обработка завершена. Обработано строк: {result['processed_rows']}")
-    # print(f"Пропущено строк (R=1): {result['skipped_rows']}")
-    # print(f"Последняя обработанная строка: {result['last_processed_row']}")
-    stop_time = datetime.now()
-    time_delta = stop_time - start_time
-    print(f'Времени затрачено: {time_delta}')
+    try:
+        start_time = datetime.now()
+        processor = GoogleSheetsProcessor(CREDENTIALS_PATH)
+        result = await processor.all_data_to_db(SPREADSHEET_URL)
+        stop_time = datetime.now()
+        time_delta = stop_time - start_time
+        print(f'Времени затрачено: {time_delta}')
+        print(result)
 
-    # except FileNotFoundError as e:
-    #     print(f"Ошибка: {e}")
-    # except ValueError as e:
-    #     print(f"Ошибка: {e}")
-    # except Exception as e:
-    #     print(f"Неожиданная ошибка: {e}")
+    except FileNotFoundError as e:
+        print(f"Ошибка: {e}")
+    except ValueError as e:
+        print(f"Ошибка: {e}")
+    except Exception as e:
+        print(f"Неожиданная ошибка: {e}")
 
 
 if __name__ == "__main__":
