@@ -1,21 +1,19 @@
 import asyncio
-import aiosqlite
 from gspread_asyncio import AsyncioGspreadClientManager, AsyncioGspreadSpreadsheet
 from oauth2client.service_account import ServiceAccountCredentials
 from pathlib import Path
-from datetime import date, timedelta, datetime
+from datetime import datetime
 from typing import Optional
 
 from config import G_API_FILE, G_API_LINK
 
 from isdayoff import AsyncProdCalendar
+from loader import db
 from workdays import add_working_days, parse_date
 from utils import queries
 
 CREDENTIALS_PATH = G_API_FILE
 SPREADSHEET_URL = G_API_LINK
-
-DB_FILE = '../data.db'
 
 DAYS_TUPLE = (1, 7, 14, 21, 42)
 
@@ -37,41 +35,46 @@ class GoogleSheetsProcessor:
             ]
         )
 
-    async def all_data_to_db(self, spreadsheet_url: str) -> dict:
+    async def all_data_to_db(self, spreadsheet_url: str, row_limit: Optional[int] = None) -> dict:
         if not spreadsheet_url:
             raise ValueError("URL таблицы не может быть пустым")
         try:
             agc = await self.client_manager.authorize()
             spreadsheet = await agc.open_by_url(spreadsheet_url)
             worksheet = await spreadsheet.get_worksheet(0)
-            db_conn = await aiosqlite.connect(DB_FILE)
 
             async with AsyncProdCalendar() as calendar:
-                all_data = await worksheet.get_all_values()
+                if row_limit:
+                    all_data = await worksheet.get_values(range_name=f'2:{row_limit}', major_dimension='ROWS')
+
+                else:
+                    all_data = (await worksheet.get_all_values())[1:]
                 updates = []
                 db_data = []
+                processed_rows = 0
+                skipped_rows = 0
 
-                for row_idx, row_data in enumerate(all_data[1:], start=2):
+                for row_idx, row_data in enumerate(all_data, start=2):
+                    if row_data[18] == '1':
+                        skipped_rows += 1
+                        continue
                     try:
                         start_date = await parse_date(row_data[5])
                         days_to_add = []
                         for i in DAYS_TUPLE:
-                            day_to_add = await add_working_days(start_date, i,
-                                                                calendar)
+                            day_to_add = await add_working_days(start_date, i, calendar)
                             days_to_add.append(day_to_add)
 
                         db_data.append((
-                            row_data[0], row_data[1], row_data[3], row_data[4],
-                            row_data[5], *days_to_add))
-                        updates.append((row_idx, 19, "1"))
+                            row_data[0], row_data[1], row_data[3], row_data[4], row_data[5], *days_to_add))
+                        updates.append((row_idx, 19, 1))
+                        processed_rows += 1
 
                     except Exception as e:
                         print(f"Ошибка при обработке строки {row_idx}: {e}")
-                        updates.append((row_idx, 19, "ERROR"))
                         continue
 
-                await db_conn.executemany(queries.GS_2_DB, db_data)
-                await db_conn.commit()
+                await db.postmany(queries.GS_2_DB, db_data)
 
                 try:
                     await worksheet.batch_update([{
@@ -82,44 +85,11 @@ class GoogleSheetsProcessor:
                     for row, col, value in updates:
                         await worksheet.update_cell(row, col, value)
 
-            await db_conn.close()
             return {
-                "status": "success",
-                "processed": len(db_data),
-                "errors": len(all_data[1:]) - len(db_data)
-            }
+                'status': 'Успешный успех!',
+                'processed': processed_rows,
+                'skipped': skipped_rows}
 
-
-            # row_num = 2
-            # processed_rows = 0
-            # skipped_rows = 0
-            # while True:
-            #     cell_a_data = await worksheet.cell(row_num, 1)
-            #     if not cell_a_data.value:
-            #         break
-            #
-            #     cell_s_data = await worksheet.cell(row_num, 19)
-            #     if cell_s_data.value == "1":
-            #         skipped_rows += 1
-            #         row_num += 1
-            #         continue
-            #
-            #     if not cell_s_data.value:
-            #         row_data = await worksheet.row_values(row_num)
-            #         await db_conn.execute('''INSERT INTO adaptation (
-            #         intern_name, intern_email, mentor_name, mentor_ter_num,
-            #         date_start) VALUES (?, ?, ?, ?, ?)''', (row_data[0],
-            #                                                 row_data[1],
-            #                                                 row_data[3],
-            #                                                 row_data[4],
-            #                                                 row_data[5]))
-            #         await db_conn.commit()
-            #         await worksheet.update_cell(row_num, 19, '1')
-            #         processed_rows += 1
-            # return {
-            #     'processed_rows': processed_rows,
-            #     'skipped_rows': skipped_rows,
-            #     'last_processed_row': row_num - 1}
         except Exception as e:
             raise ValueError(f"Ошибка обработки таблицы: {str(e)}")
 
