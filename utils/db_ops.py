@@ -1,6 +1,6 @@
 import logging
 import aiosqlite as asq
-from typing import List, Union
+from typing import List, Union, Tuple, Any
 
 from utils.create_tables import TABLES
 
@@ -34,42 +34,30 @@ class BotDB:
             await self.connection.close()
             self.connection = None
 
-    def _prepare_values(self, query: str, args: tuple, kwargs: dict) -> list:
+    def _prepare_values(self, query: str, args: tuple, kwargs: dict) -> tuple[
+        str, list[Any] | str]:
         if args:
-            return list(args)
+            values = list(args)
         elif kwargs:
-            query += ' WHERE ' + ' AND '.join(['' + k + ' = ?' for k in kwargs])
-            return list(kwargs.values())
-        return []
+            query += ' WHERE ' + ' AND '.join(
+                ['' + k + ' = ?' for k in kwargs])
+            values = list(kwargs.values())
+        else:
+            values = ''
+        return query, values
 
     async def get_one(self, query: str, *args, **kwargs):
         if self.connection is None:
             await self.create_connection()
-        values = self._prepare_values(query, args, kwargs)
-
-        # if args:
-        #     values = list(args)
-        # elif kwargs:
-        #     query += ' WHERE ' + ' AND '.join(['' + k + ' = ?' for k in kwargs])
-        #     values = list(kwargs.values())
-        # else:
-        #     values = ''
+        query, values = self._prepare_values(query, args, kwargs)
         async with self.connection.execute(query, values) as cursor:
             return await cursor.fetchone()
 
     async def get_all(self, query: str, *args, **kwargs):
         if self.connection is None:
             await self.create_connection()
-        values = self._prepare_values(query, args, kwargs)
-
-        # if args:
-        #     values = list(args)
-        # elif kwargs:
-        #     query += ' WHERE ' + ' AND '.join(
-        #         ['' + k + ' = ?' for k in kwargs])
-        #     values = list(kwargs.values())
-        # else:
-        #     values = ''
+        query, values = self._prepare_values(query, args, kwargs)
+        print(query, values)
         async with self.connection.execute(query, values) as cursor:
             return await cursor.fetchall()
 
@@ -82,17 +70,21 @@ class BotDB:
             values = list(kwargs.values())
         else:
             values = ''
-        await self.connection.execute(query, values)
-        await self.connection.commit()
+        try:
+            await self.connection.execute(query, values)
+            await self.connection.commit()
+        except Exception as e:
+            await self.connection.rollback()
+            logging.error('INSERT FAILED: %s', str(e))
+            raise
+
 
     async def postmany(self, query: str, values_list: List[Union[tuple, list]]):
         if self.connection is None:
             await self.create_connection()
-
         try:
             await self.connection.executemany(query, values_list)
             await self.connection.commit()
-
         except Exception as e:
             await self.connection.rollback()
             logging.error('BULK INSERT FAILED: %s', str(e))
