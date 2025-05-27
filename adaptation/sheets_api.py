@@ -15,7 +15,6 @@ from utils import queries
 CREDENTIALS_PATH = G_API_FILE
 SPREADSHEET_URL = G_API_LINK
 
-DAYS_TUPLE = (1, 7, 14, 21, 42)
 
 
 class GoogleSheetsProcessor:
@@ -60,13 +59,9 @@ class GoogleSheetsProcessor:
                         continue
                     try:
                         start_date = await parse_date(row_data[5])
-                        days_to_add = []
-                        for i in DAYS_TUPLE:
-                            day_to_add = await add_working_days(start_date, i, calendar)
-                            days_to_add.append(day_to_add)
-
+                        start_date_add = await add_working_days(start_date, 3, calendar)
                         db_data.append((
-                            row_data[0], row_data[1], row_data[3], row_data[4], row_data[5], *days_to_add))
+                            row_data[0], row_data[1], row_data[3], row_data[4], row_data[5], start_date_add))
                         updates.append((row_idx, 19, 1))
                         processed_rows += 1
 

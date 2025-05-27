@@ -31,8 +31,7 @@ TOP10 = "SELECT * FROM best_practice_mr WHERE bp_id = ? AND posted = True " \
 
 GS_2_DB = "INSERT INTO adaptation (" \
                 "intern_name, intern_email, mentor_name, mentor_ter_num," \
-                "date_start, date_1day, date_1week, date_2week, " \
-                "date_3week, date_6week) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                "date_start, date_start_3) VALUES (?, ?, ?, ?, ?, ?)"
 
 
 async def update_value(table: str, column_name: str, where_name: str) -> str:

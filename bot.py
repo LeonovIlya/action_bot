@@ -78,7 +78,7 @@ async def main():
 
 async def on_shutdown():
     dp.stop_polling()
-    await db.close()
+    await db.close_connection()
     await dp.storage.close()
     await dp.storage.wait_closed()
     await bot.session.close()

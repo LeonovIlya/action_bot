@@ -1,9 +1,9 @@
 import logging
-import redis
 import aiofiles
 from datetime import datetime as dt
 from aiopath import AsyncPath
 from aiogram import Dispatcher
+from redis.asyncio import Redis, RedisError
 
 import config
 from loader import db
@@ -94,7 +94,7 @@ async def check_bp_start(dp: Dispatcher):
                              f'<b>Дата окончания:</b>\n'
                              f'{str(stop)}')
     except Exception as error:
-        logging.info('Schedule error: %s', error)
+        logging.error('Schedule error: %s', error)
 
 
 # проверка на начало мотивационных программ
@@ -123,7 +123,7 @@ async def check_mp_start(dp: Dispatcher):
                          f'<b>Дата окончания:</b>\n'
                          f'{str(stop)}')
     except Exception as error:
-        logging.info('Schedule error: %s', error)
+        logging.error('Schedule error: %s', error)
 
 
 # проверка на окончание лучших практик
@@ -143,7 +143,7 @@ async def check_bp_stop(dp: Dispatcher):
                     chat_id=chat_id,
                     text=f'Лучшая практика <b>{str(i[2])}</b> закончилась!')
     except Exception as error:
-        logging.info('Schedule error: %s', error)
+        logging.error('Schedule error: %s', error)
 
 
 # проверка на окончание мотивационных программ
@@ -165,22 +165,21 @@ async def check_mp_stop(dp: Dispatcher):
                          f'для <b>{str(i[2])}</b> '
                          f'в регионе <b>{str(i[3])}</b> закончилась!')
     except Exception as error:
-        logging.info('Schedule error: %s', error)
+        logging.error('Schedule error: %s', error)
 
 
 # проверка работы редиса
 async def check_redis(dp: Dispatcher):
-    r = redis.Redis(host=config.REDIS_HOST,
+    r = Redis(host=config.REDIS_HOST,
                     password=config.REDIS_PASSWORD,
                     socket_connect_timeout=1)
     try:
-        r.ping()
-    except (redis.exceptions.ConnectionError,
-            redis.exceptions.TimeoutError):
+        await r.ping()
+    except RedisError:
         await dp.bot.send_message(
             chat_id=config.ADMIN_ID,
             text='‼REDIS УПАЛ‼')
-        logging.info('Checking redis connection - FAIL')
+        logging.error('Checking redis connection - FAIL')
 
 
 # очистка лог-файла
@@ -191,4 +190,4 @@ async def clear_logs(dp: Dispatcher):
             async with aiofiles.open(file, 'w') as file:
                 pass
     except Exception as error:
-        logging.info('Clear logs fail: %s', error)
+        logging.error('Clear logs fail: %s', error)

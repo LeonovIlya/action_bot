@@ -13,7 +13,7 @@ def error_handler_message(function):
         except Exception as error:
             await message.answer(
                 text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
-            logging.info('Message handler error: %s , function: %s, user: %s, '
+            logging.error('Message handler error: %s , function: %s, user: %s, '
                          'text: %s',
                          repr(error), function.__name__,
                          message.from_user.id, message.text)
@@ -28,7 +28,7 @@ def error_handler_callback(function):
         except Exception as error:
             await callback.message.answer(
                 text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
-            logging.info('Callback handler error: %s , function: %s, '
+            logging.error('Callback handler error: %s , function: %s, '
                          'user: %s, data: %s',
                          repr(error), function.__name__,
                          callback.from_user.id, callback.data)

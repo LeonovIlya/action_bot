@@ -57,7 +57,6 @@ class BotDB:
         if self.connection is None:
             await self.create_connection()
         query, values = self._prepare_values(query, args, kwargs)
-        print(query, values)
         async with self.connection.execute(query, values) as cursor:
             return await cursor.fetchall()
 

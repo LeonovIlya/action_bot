@@ -3,7 +3,6 @@ from datetime import date, timedelta, datetime
 from pathlib import Path
 import aiofiles
 import aiohttp
-import asyncio
 from typing import Optional, Dict, List
 
 
