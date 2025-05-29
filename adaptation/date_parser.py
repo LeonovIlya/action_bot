@@ -2,13 +2,13 @@ import asyncio
 import logging
 import json
 import hashlib
+from datetime import datetime
 from pprint import pp
 from typing import List, Dict, Union
 
 import config
 from redis.asyncio import Redis, RedisError
 from loader import db
-from utils.jobs import get_now
 
 
 class AsyncRedisColumnCache:
@@ -81,7 +81,8 @@ class AsyncRedisColumnCache:
 
 
 
-async def get_todays_records(table_name: str, cache: AsyncRedisColumnCache =
+async def get_todays_records(table_name: str, today: datetime, cache:
+AsyncRedisColumnCache =
 AsyncRedisColumnCache()) -> Union[List[Dict], None]:
 
     """Основная функция для получения записей с сегодняшней датой"""
@@ -90,7 +91,6 @@ AsyncRedisColumnCache()) -> Union[List[Dict], None]:
         if not date_columns:
             logging.error(f"No date columns in table {table_name}")
             return []
-        today = await get_now()
         conditions = " OR ".join([f"`{col}` = ?" for col in date_columns])
         params = [today] * len(date_columns)
         query = f"SELECT * FROM {table_name} WHERE {conditions}"
@@ -106,7 +106,7 @@ AsyncRedisColumnCache()) -> Union[List[Dict], None]:
                 col for col in date_columns
                 if str(record.get(col)) == str(today)]
             if matched_columns:
-                record['matched_columns'] = ", ".join(str(col) for col in matched_columns)
+                record['matched_columns'] = matched_columns
                 result.append(record)
         await cache.close()
         return result
@@ -114,12 +114,3 @@ AsyncRedisColumnCache()) -> Union[List[Dict], None]:
     except Exception as e:
         logging.error("Error fetching today's records: %s", str(e))
         return []
-
-
-async def main():
-    records = await get_todays_records(
-        table_name="adaptation")
-    pp(records)
-
-if __name__ == "__main__":
-    asyncio.run(main())

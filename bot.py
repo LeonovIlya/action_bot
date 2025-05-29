@@ -91,4 +91,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         logger.info('>>> Bot has been stopped!')
     finally:
+        on_shutdown()
         loop.close()

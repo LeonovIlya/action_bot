@@ -24,5 +24,5 @@ job_stores = {
 }
 
 dp = Dispatcher(bot, storage=storage)
-db = BotDB('../data.db')
+db = BotDB(config.DB_FILE)
 scheduler = AsyncIOScheduler()

@@ -6,8 +6,12 @@ from aiogram import Dispatcher
 from redis.asyncio import Redis, RedisError
 
 import config
+from adaptation.date_parser import get_todays_records
+from utils.keyboards import AsyncAdaptationKeyboards
 from loader import db
 from utils import queries
+
+from pprint import pp
 
 
 # функция проверки в бд по текущей дате
@@ -168,6 +172,45 @@ async def check_mp_stop(dp: Dispatcher):
         logging.error('Schedule error: %s', error)
 
 
+async def check_adaptation(dp: Dispatcher):
+    try:
+        print('check_adaptation...')
+        today = await get_now()
+        data = await get_todays_records('adaptation', today)
+        if data:
+            for i in data:
+                pp(i)
+                for k in i.get('matched_columns'):
+                    match k:
+                        case 'date_start_3':
+                            mentor_tg_id = await db.get_one(await
+                                                              queries.get_value('tg_id', 'users'), ter_num=i.get('mentor_ter_num'))
+                            mentor_name = i.get('mentor_name').split(' ')[1]
+                            keyboard = await (
+                                AsyncAdaptationKeyboards.get_adapt_start(i['id']))
+                            await dp.bot.send_message(
+                                chat_id=mentor_tg_id[0],
+                                text=f"{mentor_name}, привет! К тебе на "
+                                     f"стажировку вышел(-ла)"
+                                     f" {i.get('intern_name')}.",
+                            reply_markup=keyboard)
+
+                        case 'date_1day':
+                            pass
+                        case 'date_1week':
+                            pass
+                        case 'date_2week':
+                            pass
+                        case 'date_3week':
+                            pass
+                        case 'date_6week':
+                            pass
+                        case 'date_lastday':
+                            pass
+
+
+    except Exception as error:
+        logging.error('Check adaptation error: %s', error)
 # проверка работы редиса
 async def check_redis(dp: Dispatcher):
     r = Redis(host=config.REDIS_HOST,

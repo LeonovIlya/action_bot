@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
     KeyboardButton, ReplyKeyboardMarkup
 
+
 # стартовое меню для админ-функций
 admin_menu = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Manage Users')],
@@ -200,6 +201,41 @@ pss_calc_keyboard.row(
                          callback_data='pss_calc_3'),
     InlineKeyboardButton('Perfect Fit СУХОЙ',
                          callback_data='pss_calc_1'))
+
+# инлайн клавиатура адаптации, стартовая дата
+adapt_start = InlineKeyboardMarkup()
+adapt_start.row(
+    InlineKeyboardButton(
+        'Он еще проходит стажировку.',
+        callback_data='adapt_start_await'))
+adapt_start.row(
+    InlineKeyboardButton(
+        'Кандидат отказался от вакансии.',
+        callback_data='adapt_start_decline'))
+adapt_start.row(InlineKeyboardButton(
+    'Прошел стажировку, выходит на работу.',
+    callback_data='adapt_start_done'))
+
+
+class AsyncAdaptationKeyboards:
+    @staticmethod
+    async def get_adapt_start(record_id: int) -> InlineKeyboardMarkup:
+        """Асинхронная генерация клавиатуры с валидацией"""
+        if not isinstance(record_id, int) or record_id <= 0:
+            raise ValueError("Invalid record ID")
+
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(
+                        text='Он еще проходит стажировку.',
+                        callback_data=f'adapt_start_await_{record_id}')],
+                [InlineKeyboardButton(
+                        text='Кандидат отказался от вакансии.',
+                        callback_data=f'adapt_start_decline_{record_id}')],
+                [InlineKeyboardButton(
+                        text='Прошел стажировку, выходит на работу.',
+                        callback_data=f'adapt_start_decline_{record_id}')]])
+
 
 
 # формируем инлайн клавиатуру из кортежа
