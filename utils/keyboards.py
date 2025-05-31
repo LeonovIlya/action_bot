@@ -1,5 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
     KeyboardButton, ReplyKeyboardMarkup
+from datetime import datetime
 
 
 # стартовое меню для админ-функций
@@ -217,24 +218,42 @@ adapt_start.row(InlineKeyboardButton(
     callback_data='adapt_start_done'))
 
 
-class AsyncAdaptationKeyboards:
-    @staticmethod
-    async def get_adapt_start(record_id: int) -> InlineKeyboardMarkup:
-        """Асинхронная генерация клавиатуры с валидацией"""
-        if not isinstance(record_id, int) or record_id <= 0:
-            raise ValueError("Invalid record ID")
 
-        return InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(
-                        text='Он еще проходит стажировку.',
-                        callback_data=f'adapt_start_await_{record_id}')],
-                [InlineKeyboardButton(
-                        text='Кандидат отказался от вакансии.',
-                        callback_data=f'adapt_start_decline_{record_id}')],
-                [InlineKeyboardButton(
-                        text='Прошел стажировку, выходит на работу.',
-                        callback_data=f'adapt_start_decline_{record_id}')]])
+async def get_adapt_start(record_id: int, column_name: str , date_start: datetime )-> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text='Он еще проходит стажировку.',
+                callback_data=f'adapt:start:await:{record_id}'
+                                f':{column_name}:{date_start}')],
+            [InlineKeyboardButton(
+                text='Кандидат отказался от вакансии.',
+                callback_data=f'adapt:start:decline:{record_id}'
+                                f':{column_name}:{date_start}')],
+            [InlineKeyboardButton(
+                text='Прошел стажировку, выходит на работу.',
+                callback_data=f'adapt:start:end:{record_id}'
+                                f':{column_name}:{date_start}')],])
+
+async def get_adapt_decline()-> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text='Не устроил функционал',
+                callback_data='adapt:decline:reasons')],
+            [InlineKeyboardButton(
+                text='Не устроила ЗП',
+                callback_data='adapt:decline:reasons')],
+            [InlineKeyboardButton(
+                text='Много ТТ на маршруте',
+                callback_data='adapt:decline:reasons')],
+            [InlineKeyboardButton(
+                text='Не вышел на связь',
+                callback_data='adapt:decline:reasons')],
+            [InlineKeyboardButton(
+                text='Увольнение по инициативе агентства',
+                callback_data='adapt:decline:reasons')]])
+
 
 
 

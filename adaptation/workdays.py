@@ -1,12 +1,12 @@
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from isdayoff import AsyncProdCalendar
+from adaptation.isdayoff import AsyncProdCalendar
 
 
-async def parse_date(date_str: str) -> Optional[datetime]:
+async def parse_date(date_str: str) -> Optional[date]:
     try:
-        return datetime.strptime(date_str, "%d.%m.%Y")
+        return datetime.strptime(date_str, "%d.%m.%Y").date()
     except Exception as e:
         raise ValueError(f"Ошибка парсинга даты: {str(e)}")
 
@@ -14,8 +14,8 @@ async def parse_date(date_str: str) -> Optional[datetime]:
 async def add_working_days(
         start_date: date,
         days_to_add: int,
-        calendar: AsyncProdCalendar,
-        callback: Optional[callable] = None) -> date:
+        calendar: AsyncProdCalendar = AsyncProdCalendar(),
+        callback: Optional[callable] = None) -> str:
     current_date = start_date
     added_days = 0
 
@@ -28,4 +28,4 @@ async def add_working_days(
             if callback:
                 await callback(current_date, added_days, days_to_add)
 
-    return current_date
+    return datetime.strftime(current_date, '%d.%m.%Y')

@@ -7,9 +7,9 @@ from typing import Optional
 
 from config import G_API_FILE, G_API_LINK
 
-from isdayoff import AsyncProdCalendar
+from adaptation.isdayoff import AsyncProdCalendar
 from loader import db
-from workdays import add_working_days, parse_date
+from adaptation.workdays import add_working_days, parse_date
 from utils import queries
 
 CREDENTIALS_PATH = G_API_FILE
@@ -60,8 +60,7 @@ class GoogleSheetsProcessor:
                     try:
                         start_date = await parse_date(row_data[5])
                         start_date_add = await add_working_days(start_date, 3, calendar)
-                        db_data.append((
-                            row_data[0], row_data[1], row_data[3], row_data[4], row_data[5], start_date_add))
+                        db_data.append((row_data[0], row_data[1], row_data[3], row_data[4], row_data[5], start_date_add))
                         updates.append((row_idx, 19, 1))
                         processed_rows += 1
 

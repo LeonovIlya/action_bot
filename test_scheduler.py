@@ -8,7 +8,7 @@ from adaptation.handler import register_handlers_adaptation
 def set_scheduled_jobs():
     scheduler.add_job(func=check_adaptation,
                       trigger='interval',
-                      seconds=15,
+                      seconds=10,
                       args=(dp,))
 
 

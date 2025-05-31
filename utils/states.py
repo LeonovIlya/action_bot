@@ -92,3 +92,5 @@ class UserState(StatesGroup):
     profile_menu = State()
     profile_menu_cm = State()
     profile_comments = State()
+
+    adapt_start_end = State()

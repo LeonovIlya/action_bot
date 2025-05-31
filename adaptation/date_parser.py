@@ -81,7 +81,7 @@ class AsyncRedisColumnCache:
 
 
 
-async def get_todays_records(table_name: str, today: datetime, cache:
+async def get_todays_records(table_name: str, today: str, cache:
 AsyncRedisColumnCache =
 AsyncRedisColumnCache()) -> Union[List[Dict], None]:
 
