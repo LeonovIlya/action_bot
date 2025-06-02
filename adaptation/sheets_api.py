@@ -12,14 +12,14 @@ from adaptation.workdays import add_working_days, parse_date
 from loader import db
 from utils import queries
 
-
 CREDENTIALS_PATH = G_API_FILE
 SPREADSHEET_URL = G_API_LINK
 
 
 class GoogleSheetsProcessor:
     """Класс для работы с Google API"""
-    def __init__(self, credentials_path: str):
+
+    def __init__(self, credentials_path : str = CREDENTIALS_PATH):
         """Инициализация с проверкой учетных данных"""
         if not Path(credentials_path).exists():
             raise FileNotFoundError(
@@ -31,7 +31,6 @@ class GoogleSheetsProcessor:
         self._spreadsheet = None
         self._current_url = None
 
-
     def _authorize(self):
         """Генератор учетных данных Google API"""
         return ServiceAccountCredentials.from_json_keyfile_name(
@@ -40,13 +39,11 @@ class GoogleSheetsProcessor:
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/drive'])
 
-
     async def _get_client(self):
         """Получение авторизованного клиента (с кешированием)"""
         if not self._agc:
             self._agc = await self.client_manager.authorize()
         return self._agc
-
 
     async def _get_spreadsheet(self, spreadsheet_url: str):
         """Получение объекта таблицы (с кешированием)"""
@@ -56,10 +53,9 @@ class GoogleSheetsProcessor:
             self._current_url = spreadsheet_url
         return self._spreadsheet
 
-
     async def all_data_to_db(
             self,
-            spreadsheet_url: str,
+            spreadsheet_url: str = SPREADSHEET_URL,
             row_limit: Optional[int] = None) -> dict:
         """
         Перенос данных из Google Sheets в локальную БД
@@ -104,7 +100,7 @@ class GoogleSheetsProcessor:
                 await db.postmany(queries.GS_2_DB, db_data)
                 try:
                     await worksheet.batch_update([{'range': f"R{row}C{col}",
-                        'values': [[value]]} for row, col, value in updates])
+                                                   'values': [[value]]} for row, col, value in updates])
                 except AttributeError:
                     for row, col, value in updates:
                         await worksheet.update_cell(row, col, value)
@@ -115,13 +111,12 @@ class GoogleSheetsProcessor:
         except Exception as e:
             raise ValueError(f"Ошибка обработки таблицы: {e}")
 
-
     async def update_cell_by_name(
             self,
-            spreadsheet_url: str,
             name: str,
             column: str,
             value: Union[str, int, float],
+            spreadsheet_url: str = SPREADSHEET_URL,
             key_column: str = 'A') -> bool:
         """
         Обновление ячейки по значению в ключевом столбце
@@ -146,21 +141,20 @@ class GoogleSheetsProcessor:
             return False
 
 
-async def main():
+async def sheets_main():
     """Тестовая функция"""
     try:
         start_time = datetime.now()
         processor = GoogleSheetsProcessor(CREDENTIALS_PATH)
         await processor.all_data_to_db(SPREADSHEET_URL)
-        await processor.update_cell_by_name(
-            spreadsheet_url=SPREADSHEET_URL,
-            name="Зайченко Диана Борисовна",  # Значение в столбце A
-            column="G",  # Столбец для обновления
-            value="TEST"        )
+        # await processor.update_cell_by_name(
+        #     spreadsheet_url=SPREADSHEET_URL,
+        #     name="Зайченко Диана Борисовна",  # Значение в столбце A
+        #     column="G",  # Столбец для обновления
+        #     value="TEST")
         stop_time = datetime.now()
         time_delta = stop_time - start_time
         print(f'Времени затрачено: {time_delta}')
-
 
     except FileNotFoundError as e:
         print(f"Ошибка: {e}")
@@ -169,6 +163,5 @@ async def main():
     except Exception as e:
         print(f"Неожиданная ошибка: {e}")
 
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(sheets_main())

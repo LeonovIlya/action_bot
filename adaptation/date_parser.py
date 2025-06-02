@@ -1,11 +1,7 @@
-import asyncio
 import logging
 import json
 import hashlib
-from datetime import datetime
-from pprint import pp
 from typing import List, Dict, Union
-
 import config
 from redis.asyncio import Redis, RedisError
 from loader import db
@@ -66,7 +62,6 @@ class AsyncRedisColumnCache:
             logging.error(f"Failed to fetch columns for {table_name}: {e}")
             return []
 
-
     async def invalidate_cache(self, table_name: str):
         """Сбрасываем кэш при изменении схемы"""
         cache_key = self._get_cache_key(table_name)
@@ -80,11 +75,11 @@ class AsyncRedisColumnCache:
             logging.error(f"Error closing Redis connection: {e}")
 
 
-
-async def get_todays_records(table_name: str, today: str, cache:
-AsyncRedisColumnCache =
-AsyncRedisColumnCache()) -> Union[List[Dict], None]:
-
+async def get_todays_records(
+        table_name: str,
+        today: str,
+        cache: AsyncRedisColumnCache = AsyncRedisColumnCache())\
+        -> Union[List[Dict], None]:
     """Основная функция для получения записей с сегодняшней датой"""
     try:
         date_columns = await cache.get_columns(table_name)

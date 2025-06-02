@@ -4,7 +4,6 @@ from utils.jobs import check_adaptation
 from adaptation.handler import register_handlers_adaptation
 
 
-
 def set_scheduled_jobs():
     scheduler.add_job(func=check_adaptation,
                       trigger='interval',

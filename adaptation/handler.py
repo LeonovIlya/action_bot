@@ -1,11 +1,9 @@
-import re
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
-from datetime import datetime as dt
-
 
 from adaptation.workdays import add_working_days, parse_date
+from adaptation.sheets_api import GoogleSheetsProcessor
 from loader import db
 from utils import decorators, keyboards, queries
 from utils.date_validator import is_valid_date
@@ -36,9 +34,9 @@ async def adapt_start_await(callback: types.CallbackQuery, state: FSMContext):
             await state.update_data(adapt_start_id=adapt_id)
             await UserState.adapt_start_end.set()
 
+
 async def adapt_decline_reasons(callback: types.CallbackQuery):
     pass
-
 
 
 async def adapt_start_end(message: types.Message, state: FSMContext):
@@ -48,6 +46,16 @@ async def adapt_start_end(message: types.Message, state: FSMContext):
         await db.post(await queries.update_value('adaptation', 'date_1day',
                                                  'id'), message.text,
                       data['adapt_start_id'])
+        intern_name = await db.get_one(
+            await queries.get_value(
+                value='intern_name',
+                table='adaptation'),
+            id=data['adapt_start_id'])
+        gsp = GoogleSheetsProcessor()
+        await gsp.update_cell_by_name(
+            name=intern_name[0],
+            column='G',
+            value=str(message.text))
         await message.answer(text='Дата выхода сотрудника на работу задана!')
     else:
         await message.answer(text='❗ Неверный ввод, попробуйте еще раз!')
@@ -63,7 +71,6 @@ def register_handlers_adaptation(dp: Dispatcher):
         adapt_decline_reasons,
         text_startswith="adapt:decline:reasons",
         state='*')
-
     dp.register_message_handler(
         adapt_start_end,
         state=UserState.adapt_start_end)

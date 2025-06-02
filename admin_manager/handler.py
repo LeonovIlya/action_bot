@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 
 from aiogram import Dispatcher, types

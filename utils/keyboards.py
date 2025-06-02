@@ -2,7 +2,6 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
     KeyboardButton, ReplyKeyboardMarkup
 from datetime import datetime
 
-
 # стартовое меню для админ-функций
 admin_menu = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Manage Users')],
@@ -218,24 +217,27 @@ adapt_start.row(InlineKeyboardButton(
     callback_data='adapt_start_done'))
 
 
-
-async def get_adapt_start(record_id: int, column_name: str , date_start: datetime )-> InlineKeyboardMarkup:
+async def get_adapt_start(
+        record_id: int,
+        column_name: str,
+        date_start: datetime) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(
                 text='Он еще проходит стажировку.',
                 callback_data=f'adapt:start:await:{record_id}'
-                                f':{column_name}:{date_start}')],
+                              f':{column_name}:{date_start}')],
             [InlineKeyboardButton(
                 text='Кандидат отказался от вакансии.',
                 callback_data=f'adapt:start:decline:{record_id}'
-                                f':{column_name}:{date_start}')],
+                              f':{column_name}:{date_start}')],
             [InlineKeyboardButton(
                 text='Прошел стажировку, выходит на работу.',
                 callback_data=f'adapt:start:end:{record_id}'
-                                f':{column_name}:{date_start}')],])
+                              f':{column_name}:{date_start}')]])
 
-async def get_adapt_decline()-> InlineKeyboardMarkup:
+
+async def get_adapt_decline() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(
@@ -253,8 +255,6 @@ async def get_adapt_decline()-> InlineKeyboardMarkup:
             [InlineKeyboardButton(
                 text='Увольнение по инициативе агентства',
                 callback_data='adapt:decline:reasons')]])
-
-
 
 
 # формируем инлайн клавиатуру из кортежа

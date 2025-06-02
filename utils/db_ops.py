@@ -1,6 +1,6 @@
 import logging
 import aiosqlite as asq
-from typing import List, Union, Tuple, Any
+from typing import List, Union, Any
 
 from utils.create_tables import TABLES
 
@@ -34,8 +34,8 @@ class BotDB:
             await self.connection.close()
             self.connection = None
 
-    def _prepare_values(self, query: str, args: tuple, kwargs: dict) -> tuple[
-        str, list[Any] | str]:
+    def _prepare_values(self, query: str, args: tuple, kwargs: dict) ->\
+            tuple[str, list[Any] | str]:
         if args:
             values = list(args)
         elif kwargs:
@@ -76,7 +76,6 @@ class BotDB:
             await self.connection.rollback()
             logging.error('INSERT FAILED: %s', str(e))
             raise
-
 
     async def postmany(self, query: str, values_list: List[Union[tuple, list]]):
         if self.connection is None:
