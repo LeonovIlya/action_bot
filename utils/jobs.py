@@ -10,8 +10,6 @@ from adaptation.date_parser import get_todays_records
 from loader import db
 from utils import keyboards, queries
 
-from pprint import pp
-
 
 # функция проверки в бд по текущей дате
 async def check(name: str, column_name: str, **kwargs) -> list | None:
@@ -49,7 +47,7 @@ async def get_region_channel(region: str) -> str:
 
 
 # преобразование datetime в читаемый формат
-async def datetime_op(dt_start: str , dt_stop: str) -> tuple:
+async def datetime_op(dt_start: str, dt_stop: str) -> tuple:
     datetime_start = dt.strptime(str(dt_start), '%Y-%m-%d %H:%M:%S')
     datetime_stop = dt.strptime(str(dt_stop), '%Y-%m-%d %H:%M:%S')
     start = datetime_start.strftime('%d %B %Y')
@@ -180,17 +178,20 @@ async def check_adaptation(dp: Dispatcher):
                 for k in i.get('matched_columns'):
                     match k:
                         case 'date_start_3':
-                            mentor_tg_id = await db.get_one(await
-                                                            queries.get_value('tg_id', 'users'), ter_num=i.get('mentor_ter_num'))
+                            mentor_tg_id = await db.get_one(
+                                await queries.get_value('tg_id', 'users'),
+                                ter_num=i.get('mentor_ter_num'))
                             mentor_name = i.get('mentor_name').split(' ')[1]
-                            keyboard = await (keyboards.get_adapt_start(i['id'], k, i.get(k)))
+                            keyboard = await (keyboards.get_adapt_start(
+                                record_id=i['id'],
+                                column_name=k,
+                                date_start=i.get(k)))
                             await dp.bot.send_message(
                                 chat_id=mentor_tg_id[0],
                                 text=f"{mentor_name}, привет! К тебе на "
                                      f"стажировку вышел(-ла)"
                                      f" {i.get('intern_name')}.",
-                            reply_markup=keyboard)
-
+                                reply_markup=keyboard)
                         case 'date_1day':
                             pass
                         case 'date_1week':
@@ -203,8 +204,6 @@ async def check_adaptation(dp: Dispatcher):
                             pass
                         case 'date_lastday':
                             pass
-
-
     except Exception as error:
         logging.error('Check adaptation error: %s', error)
 
@@ -212,8 +211,8 @@ async def check_adaptation(dp: Dispatcher):
 # проверка работы редиса
 async def check_redis(dp: Dispatcher):
     r = Redis(host=config.REDIS_HOST,
-                    password=config.REDIS_PASSWORD,
-                    socket_connect_timeout=1)
+              password=config.REDIS_PASSWORD,
+              socket_connect_timeout=1)
     try:
         await r.ping()
     except RedisError:
