@@ -1,3 +1,6 @@
+from typing import Union, List
+
+
 INSERT_USER = "INSERT INTO users (username, ter_num, password, region, "\
               "position, grade, kas, citimanager) " \
               "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
@@ -34,8 +37,13 @@ GS_2_DB = "INSERT INTO adaptation (" \
                 "date_start, date_start_3) VALUES (?, ?, ?, ?, ?, ?)"
 
 
-async def update_value(table: str, column_name: str, where_name: str) -> str:
-    return f"UPDATE {table} SET {column_name} = ? WHERE {where_name} = ?"
+async def update_value(
+        table: str,
+        column_name: Union[str, List[str]],
+        where_name: str) -> str:
+    columns = [column_name] if isinstance(column_name, str) else column_name
+    set_clause = ", ".join(f"{col} = ?" for col in columns)
+    return f"UPDATE {table} SET {set_clause} WHERE {where_name} = ?"
 
 
 async def get_value(value: str, table: str) -> str:

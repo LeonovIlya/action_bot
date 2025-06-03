@@ -240,19 +240,19 @@ async def get_adapt_decline()-> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(
                 text='Не устроил функционал',
-                callback_data='adapt:decline:reasons')],
+                callback_data='adapt:decline:reasons:func')],
             [InlineKeyboardButton(
                 text='Не устроила ЗП',
-                callback_data='adapt:decline:reasons')],
+                callback_data='adapt:decline:reasons:salary')],
             [InlineKeyboardButton(
                 text='Много ТТ на маршруте',
-                callback_data='adapt:decline:reasons')],
+                callback_data='adapt:decline:reasons:manytt')],
             [InlineKeyboardButton(
                 text='Не вышел на связь',
-                callback_data='adapt:decline:reasons')],
+                callback_data='adapt:decline:reasons:notcall')],
             [InlineKeyboardButton(
                 text='Увольнение по инициативе агентства',
-                callback_data='adapt:decline:reasons')]])
+                callback_data='adapt:decline:reasons:agency')]])
 
 
 

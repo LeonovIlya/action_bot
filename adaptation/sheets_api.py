@@ -152,11 +152,6 @@ async def main():
         start_time = datetime.now()
         processor = GoogleSheetsProcessor(CREDENTIALS_PATH)
         await processor.all_data_to_db(SPREADSHEET_URL)
-        await processor.update_cell_by_name(
-            spreadsheet_url=SPREADSHEET_URL,
-            name="Зайченко Диана Борисовна",  # Значение в столбце A
-            column="G",  # Столбец для обновления
-            value="TEST"        )
         stop_time = datetime.now()
         time_delta = stop_time - start_time
         print(f'Времени затрачено: {time_delta}')
