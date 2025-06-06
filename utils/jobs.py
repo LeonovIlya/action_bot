@@ -181,17 +181,20 @@ async def check_adaptation(dp: Dispatcher):
                             mentor_tg_id = await db.get_one(
                                 await queries.get_value('tg_id', 'users'),
                                 ter_num=i.get('mentor_ter_num'))
-                            mentor_name = i.get('mentor_name').split(' ')[1]
-                            keyboard = await (keyboards.get_adapt_start(
-                                record_id=i['id'],
-                                column_name=k,
-                                date_start=i.get(k)))
-                            await dp.bot.send_message(
-                                chat_id=mentor_tg_id[0],
-                                text=f"{mentor_name}, привет! К тебе на "
-                                     f"стажировку вышел(-ла)"
-                                     f" {i.get('intern_name')}.",
-                                reply_markup=keyboard)
+                            if mentor_tg_id[0] != 0:
+                                mentor_name = i.get('mentor_name').split(' ')[1]
+                                keyboard = await (keyboards.get_adapt_start(
+                                    record_id=i['id'],
+                                    column_name=k,
+                                    date_start=i.get(k)))
+                                await dp.bot.send_message(
+                                    chat_id=mentor_tg_id[0],
+                                    text=f"{mentor_name}, привет! К тебе на "
+                                         f"стажировку вышел(-ла)"
+                                         f" {i.get('intern_name')}.",
+                                    reply_markup=keyboard)
+                            else:
+                                pass # добавить отправку информации СМу
                         case 'date_1day':
                             pass
                         case 'date_1week':

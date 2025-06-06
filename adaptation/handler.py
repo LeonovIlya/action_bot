@@ -43,6 +43,8 @@ async def adapt_start_await(callback: types.CallbackQuery, state: FSMContext):
 
 async def adapt_decline_reasons(callback: types.CallbackQuery, state: FSMContext):
     await callback.bot.answer_callback_query(callback.id)
+    await callback.answer(text='Данные обновляются...', show_alert=False)
+    await callback.message.delete()
     data = await state.get_data()
     button_text = str(next(
         btn.text
@@ -56,16 +58,19 @@ async def adapt_decline_reasons(callback: types.CallbackQuery, state: FSMContext
             where_name='id'),
         button_text, 1,
         data['adapt_start_id'])
-
+    intern_name = await db.get_one(
+        await queries.get_value(
+            value='intern_name',
+            table='adaptation'),
+        id=data['adapt_start_id'])
     gsp = GoogleSheetsProcessor()
-
     await gsp.update_cell_by_name(
-        name='',
-        column='М',
+        name=intern_name[0],
+        column='M',
         value=button_text)
-
-    # await callback.message.edit_text(
-    #     text='Причина отказа сохранена!')
+    await callback.message.answer(
+        text='Причина отказа сохранена!',
+        reply_markup=keyboards.main_menu)
 
 
 

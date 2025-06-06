@@ -91,7 +91,6 @@ async def get_todays_records(
         query = (f'SELECT * FROM {table_name} WHERE ('
                  f'{conditions}) AND is_archive = ?')
         params.append(False)
-        print(query, params)
         rows = await db.get_all(query, *params)
         if not rows:
             return None

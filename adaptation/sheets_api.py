@@ -19,7 +19,7 @@ SPREADSHEET_URL = G_API_LINK
 
 class GoogleSheetsProcessor:
     """Класс для работы с Google API"""
-    def __init__(self, credentials_path: str):
+    def __init__(self, credentials_path : str = CREDENTIALS_PATH):
         """Инициализация с проверкой учетных данных"""
         if not Path(credentials_path).exists():
             raise FileNotFoundError(
@@ -59,7 +59,7 @@ class GoogleSheetsProcessor:
 
     async def all_data_to_db(
             self,
-            spreadsheet_url: str,
+            spreadsheet_url: str = SPREADSHEET_URL,
             row_limit: Optional[int] = None) -> dict:
         """
         Перенос данных из Google Sheets в локальную БД
@@ -118,11 +118,11 @@ class GoogleSheetsProcessor:
 
     async def update_cell_by_name(
             self,
-            spreadsheet_url: str,
             name: str,
             column: str,
             value: Union[str, int, float],
-            key_column: str = 'A') -> bool:
+            key_column: str = 'A',
+            spreadsheet_url: str = SPREADSHEET_URL,) -> bool:
         """
         Обновление ячейки по значению в ключевом столбце
         """
