@@ -178,32 +178,127 @@ async def check_adaptation(dp: Dispatcher):
                 for k in i.get('matched_columns'):
                     match k:
                         case 'date_start_3':
-                            mentor_tg_id = await db.get_one(
-                                await queries.get_value('tg_id', 'users'),
+                            mentor = await db.get_one(
+                                await queries.get_value(
+                                    value='tg_id, citimanager, username',
+                                    table='users'),
                                 ter_num=i.get('mentor_ter_num'))
-                            if mentor_tg_id[0] != 0:
+                            if mentor[0] != 0:
                                 mentor_name = i.get('mentor_name').split(' ')[1]
                                 keyboard = await (keyboards.get_adapt_start(
                                     record_id=i['id'],
                                     column_name=k,
                                     date_start=i.get(k)))
                                 await dp.bot.send_message(
-                                    chat_id=mentor_tg_id[0],
+                                    chat_id=mentor[0],
                                     text=f"{mentor_name}, привет! К тебе на "
                                          f"стажировку вышел(-ла)"
                                          f" {i.get('intern_name')}.",
                                     reply_markup=keyboard)
                             else:
-                                pass # добавить отправку информации СМу
-                        case 'date_1day':
-                            pass
+                                cm_tg_id = await db.get_one(
+                                await queries.get_value('tg_id', 'users'),
+                                username=mentor[1])
+                                await dp.bot.send_message(
+                                    chat_id=cm_tg_id[0],
+                                    text=f'Ваш сотрудник {mentor[2]} на '
+                                         f'авторизован в боте. Обновление '
+                                         f'информации по адаптации '
+                                         f'его стажеров '
+                                         f'невозможно.')
                         case 'date_1week':
-                            pass
-                        case 'date_2week':
-                            pass
+                            mentor = await db.get_one(
+                                await queries.get_value(
+                                    value='tg_id, citimanager, username',
+                                    table='users'),
+                                ter_num=i.get('mentor_ter_num'))
+                            if mentor[0] != 0:
+                                mentor_name = i.get('mentor_name').split(' ')[1]
+                                keyboard = await keyboards.get_adapt_1week(i['id'])
+                                await dp.bot.send_message(
+                                    chat_id=mentor[0],
+                                    text=f"{mentor_name}, привет! Как прошла"
+                                         f" 1 неделя работы нашего новичка"
+                                         f" {i.get('intern_name')}?",
+                                    reply_markup=keyboard)
+                            else:
+                                cm_tg_id = await db.get_one(
+                                await queries.get_value('tg_id', 'users'),
+                                username=mentor[1])
+                                await dp.bot.send_message(
+                                    chat_id=cm_tg_id[0],
+                                    text=f'Ваш сотрудник {mentor[2]} не '
+                                         f'авторизован в боте. Обновление '
+                                         f'информации по адаптации '
+                                         f'его стажеров '
+                                         f'невозможно.')
                         case 'date_3week':
-                            pass
+                            mentor = await db.get_one(
+                                await queries.get_value(
+                                    value='tg_id, citimanager, username',
+                                    table='users'),
+                                ter_num=i.get('mentor_ter_num'))
+                            if mentor[0] != 0:
+                                mentor_name = i.get('mentor_name').split(' ')[
+                                    1]
+                                keyboard = await keyboards.get_adapt_3week(
+                                    i['id'])
+                                await dp.bot.send_message(
+                                    chat_id=mentor[0],
+                                    text=f"{mentor_name}, привет! Спешу "
+                                         f"напомнить, что в конце 3 рабочей "
+                                         f"недели наш новичок "
+                                         f"{i.get('intern_name')} должен(-на) "
+                                         f"пройти 'Тест среза знаний'! ",
+                                    reply_markup=keyboard)
+                                await dp.bot.send_message(
+                                    chat_id=mentor[0],
+                                    text='<a href="http://ya.ru/">ССЫЛКА НА '# заменить на нормельную ссылку
+                                         'ТЕСТ</a>')
+                            else:
+                                cm_tg_id = await db.get_one(
+                                    await queries.get_value('tg_id', 'users'),
+                                    username=mentor[1])
+                                await dp.bot.send_message(
+                                    chat_id=cm_tg_id[0],
+                                    text=f'Ваш сотрудник {mentor[2]} не '
+                                         f'авторизован в боте. Обновление '
+                                         f'информации по адаптации '
+                                         f'его стажеров '
+                                         f'невозможно.')
+                        case 'date_3week_5':
+                            mentor = await db.get_one(
+                                await queries.get_value(
+                                    value='tg_id, citimanager, username',
+                                    table='users'),
+                                ter_num=i.get('mentor_ter_num'))
+                            if mentor[0] != 0:
+                                mentor_name = i.get('mentor_name').split(' ')[
+                                    1]
+                                keyboard = await keyboards.get_adapt_3week_5(
+                                    i['id'])
+                                await dp.bot.send_message(
+                                    chat_id=mentor[0],
+                                    text=f"{mentor_name}, привет! "
+                                         f"{i.get('intern_name')} прошел(-ла) "
+                                         f"тест среза знаний? Не забудь, "
+                                         f"это важный этап, чтобы понять, "
+                                         f"что не хватает из знаний новичку! ",
+                                    reply_markup=keyboard)
+                            else:
+                                cm_tg_id = await db.get_one(
+                                    await queries.get_value('tg_id', 'users'),
+                                    username=mentor[1])
+                                await dp.bot.send_message(
+                                    chat_id=cm_tg_id[0],
+                                    text=f'Ваш сотрудник {mentor[2]} не '
+                                         f'авторизован в боте. Обновление '
+                                         f'информации по адаптации '
+                                         f'его стажеров '
+                                         f'невозможно.')
                         case 'date_6week':
+                            pass
+                        case 'date_6week_3':
                             pass
                         case 'date_lastday':
                             pass

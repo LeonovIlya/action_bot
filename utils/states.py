@@ -94,3 +94,4 @@ class UserState(StatesGroup):
     profile_comments = State()
 
     adapt_start_end = State()
+    adapt_decline = State()

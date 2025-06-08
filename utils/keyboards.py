@@ -257,6 +257,37 @@ async def get_adapt_decline() -> InlineKeyboardMarkup:
                 callback_data='adapt:decline:reasons:agency')]])
 
 
+async def get_adapt_1week(record_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text='Все отлично! Идём дальше!',
+                callback_data=f'adapt:1week:go:{record_id}')],
+            [InlineKeyboardButton(
+                text='Кандидат отказался от вакансии.',
+                callback_data=f'adapt:1week:decline:{record_id}')]])
+
+async def get_adapt_3week(record_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text='Сотрудник с нами, отправляю ему тест!',
+                callback_data=f'adapt:3week:go:{record_id}')],
+            [InlineKeyboardButton(
+                text='Кандидат отказался от вакансии.',
+                callback_data=f'adapt:3week:decline:{record_id}')]])
+
+async def get_adapt_3week_5(record_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text='Да, тест направлен!',
+                callback_data=f'adapt:3week_5:go:{record_id}')],
+            [InlineKeyboardButton(
+                text='Кандидат отказался от вакансии.',
+                callback_data=f'adapt:3week_5:decline:{record_id}')]])
+
+
 # формируем инлайн клавиатуру из кортежа
 async def get_inline_buttons(data: tuple | list) -> InlineKeyboardMarkup:
     get_inline_keyboard = InlineKeyboardMarkup()
