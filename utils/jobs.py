@@ -273,8 +273,7 @@ async def check_adaptation(dp: Dispatcher):
                                     table='users'),
                                 ter_num=i.get('mentor_ter_num'))
                             if mentor[0] != 0:
-                                mentor_name = i.get('mentor_name').split(' ')[
-                                    1]
+                                mentor_name = i.get('mentor_name').split(' ')[1]
                                 keyboard = await keyboards.get_adapt_3week_5(
                                     i['id'])
                                 await dp.bot.send_message(
@@ -297,9 +296,63 @@ async def check_adaptation(dp: Dispatcher):
                                          f'его стажеров '
                                          f'невозможно.')
                         case 'date_6week':
-                            pass
+                            mentor = await db.get_one(
+                                await queries.get_value(
+                                    value='tg_id, citimanager, username',
+                                    table='users'),
+                                ter_num=i.get('mentor_ter_num'))
+                            if mentor[0] != 0:
+                                mentor_name = i.get('mentor_name').split(' ')[
+                                    1]
+                                keyboard = await keyboards.get_adapt_6week(i['id'])
+                                await dp.bot.send_message(
+                                    chat_id=mentor[0],
+                                    text=f"{mentor_name}, привет! Вот и подошла к концу адаптация {i.get('intern_name')}. Уверен, он(она) прошел(-ла) все этапы позитивно и уже показывает результаты. Но помимо нашей оценки сотрудника, нам важно знать, что он чувствовал на этапе адаптации. Направляю тебе ссылку на опрос удовлетворенности!",
+                                    reply_markup=keyboard)
+                                await dp.bot.send_message(
+                                    chat_id=mentor[0],
+                                    text='<a href="http://ya.ru/">ССЫЛКА НА '  # заменить на нормельную ссылку
+                                         'ТЕСТ</a>')
+                            else:
+                                cm_tg_id = await db.get_one(
+                                    await queries.get_value('tg_id', 'users'),
+                                    username=mentor[1])
+                                await dp.bot.send_message(
+                                    chat_id=cm_tg_id[0],
+                                    text=f'Ваш сотрудник {mentor[2]} не '
+                                         f'авторизован в боте. Обновление '
+                                         f'информации по адаптации '
+                                         f'его стажеров '
+                                         f'невозможно.')
                         case 'date_6week_3':
-                            pass
+                            mentor = await db.get_one(
+                                await queries.get_value(
+                                    value='tg_id, citimanager, username',
+                                    table='users'),
+                                ter_num=i.get('mentor_ter_num'))
+                            if mentor[0] != 0:
+                                mentor_name = i.get('mentor_name').split(' ')[
+                                    1]
+                                keyboard = await keyboards.get_adapt_6week_3(i['id'])
+                                await dp.bot.send_message(
+                                    chat_id=mentor[0],
+                                    text=f"{mentor_name}, привет! Помни, что нам важно мнение новичка о процессе адаптации. Ты направила опрос удовлетворенности?",
+                                    reply_markup=keyboard)
+                                await dp.bot.send_message(
+                                    chat_id=mentor[0],
+                                    text='<a href="http://ya.ru/">ССЫЛКА НА '  # заменить на нормельную ссылку
+                                         'ТЕСТ</a>')
+                            else:
+                                cm_tg_id = await db.get_one(
+                                    await queries.get_value('tg_id', 'users'),
+                                    username=mentor[1])
+                                await dp.bot.send_message(
+                                    chat_id=cm_tg_id[0],
+                                    text=f'Ваш сотрудник {mentor[2]} не '
+                                         f'авторизован в боте. Обновление '
+                                         f'информации по адаптации '
+                                         f'его стажеров '
+                                         f'невозможно.')
                         case 'date_lastday':
                             pass
     except Exception as error:

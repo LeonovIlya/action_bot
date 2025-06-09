@@ -1,14 +1,8 @@
-import re
 import aiofiles
-import asyncio
 
-from aiofiles import os as aios
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiopath import AsyncPath
-from datetime import datetime as dt
-
-from pprint import pprint
 
 from adaptation.sheets_api import GoogleSheetsProcessor
 from adaptation.workdays import add_working_days, parse_date
@@ -50,7 +44,6 @@ async def adapt_start_await(callback: types.CallbackQuery, state: FSMContext):
 
 @decorators.error_handler_callback
 async def adapt_decline_reasons(callback: types.CallbackQuery, state: FSMContext):
-
     # добавить запрос даты последнего дня работы?
 
     await callback.answer(text='Данные обновляются...', show_alert=False)
@@ -100,7 +93,7 @@ async def adapt_start_end(message: types.Message, state: FSMContext):
                 column_name=['date_1day', 'date_1week', 'date_3week',
                              'date_6week'],
                 where_name='id'),
-         message.text, date_1week, date_3week, date_6week, data['adapt_start_id'])
+            message.text, date_1week, date_3week, date_6week, data['adapt_start_id'])
         intern_name = await db.get_one(
             await queries.get_value(
                 value='intern_name',
@@ -172,7 +165,7 @@ async def adapt_3week_5(callback: types.CallbackQuery, state: FSMContext):
     await callback.bot.answer_callback_query(callback.id)
     event, adapt_id = callback.data.split(':')[-2:]
     match event:
-        case 'go':
+        case 'yes':
             await callback.message.delete()
             await callback.message.answer(
                 text='Отлично! Детально изучить ответы можно запросив их у '
@@ -183,6 +176,39 @@ async def adapt_3week_5(callback: types.CallbackQuery, state: FSMContext):
             await callback.message.edit_reply_markup(reply_markup=keyboard)
             await state.update_data(adapt_start_id=adapt_id)
             await UserState.adapt_decline.set()
+
+
+@decorators.error_handler_callback
+async def adapt_6week(callback: types.CallbackQuery, state: FSMContext):
+    await callback.bot.answer_callback_query(callback.id)
+    event, adapt_id = callback.data.split(':')[-2:]
+    match event:
+        case 'go':
+            await callback.message.delete()
+            await callback.message.answer(
+                text='Отлично! Успешный процесс адаптации - результат хорошей работы руководителя. Ты молодец! Желаю и дальше удачи с новичками!')
+        case 'decline':
+            keyboard = await keyboards.get_adapt_decline()
+            await callback.message.edit_text(text='Выберите причину отказа:')
+            await callback.message.edit_reply_markup(reply_markup=keyboard)
+            await state.update_data(adapt_start_id=adapt_id)
+            await UserState.adapt_decline.set()
+
+
+@decorators.error_handler_callback
+async def adapt_6week_3(callback: types.CallbackQuery, state: FSMContext):
+    await callback.bot.answer_callback_query(callback.id)
+    event, adapt_id = callback.data.split(':')[-2:]
+    match event:
+        case 'yes':
+            await callback.message.delete()
+            await callback.message.answer(
+                text='Отлично!')
+        case 'forgot':
+            await callback.message.delete()
+            await callback.message.answer(
+                text='Поторопись!')
+
 
 # компануем в обработчик
 def register_handlers_adaptation(dp: Dispatcher):
@@ -201,6 +227,14 @@ def register_handlers_adaptation(dp: Dispatcher):
     dp.register_callback_query_handler(
         adapt_3week_5,
         text_startswith="adapt:3week_5:",
+        state='*')
+    dp.register_callback_query_handler(
+        adapt_6week,
+        text_startswith="adapt:6week:",
+        state='*')
+    dp.register_callback_query_handler(
+        adapt_6week_3,
+        text_startswith="adapt:6week_3:",
         state='*')
     dp.register_callback_query_handler(
         adapt_decline_reasons,

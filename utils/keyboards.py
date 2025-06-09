@@ -217,6 +217,7 @@ adapt_start.row(InlineKeyboardButton(
     callback_data='adapt_start_done'))
 
 
+# Инлайн клавиатуры модуля адаптаций
 async def get_adapt_start(
         record_id: int,
         column_name: str,
@@ -267,6 +268,7 @@ async def get_adapt_1week(record_id: int) -> InlineKeyboardMarkup:
                 text='Кандидат отказался от вакансии.',
                 callback_data=f'adapt:1week:decline:{record_id}')]])
 
+
 async def get_adapt_3week(record_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -277,18 +279,41 @@ async def get_adapt_3week(record_id: int) -> InlineKeyboardMarkup:
                 text='Кандидат отказался от вакансии.',
                 callback_data=f'adapt:3week:decline:{record_id}')]])
 
+
 async def get_adapt_3week_5(record_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(
                 text='Да, тест направлен!',
-                callback_data=f'adapt:3week_5:go:{record_id}')],
+                callback_data=f'adapt:3week_5:yes:{record_id}')],
             [InlineKeyboardButton(
                 text='Кандидат отказался от вакансии.',
                 callback_data=f'adapt:3week_5:decline:{record_id}')]])
 
 
-# формируем инлайн клавиатуру из кортежа
+async def get_adapt_6week(record_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text='Все отлично! Сотрудник с нами, направляю тест!',
+                callback_data=f'adapt:6week:go:{record_id}')],
+            [InlineKeyboardButton(
+                text='Кандидат отказался от вакансии.',
+                callback_data=f'adapt:6week:decline:{record_id}')]])
+
+
+async def get_adapt_6week_3(record_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text='Да, уже прошли!',
+                callback_data=f'adapt:6week_3:yes:{record_id}')],
+            [InlineKeyboardButton(
+                text='Уже бегу!',
+                callback_data=f'adapt:6week_3:forgot:{record_id}')]])
+
+
+# формируем инлайн клавиатуру из коллекций
 async def get_inline_buttons(data: tuple | list) -> InlineKeyboardMarkup:
     get_inline_keyboard = InlineKeyboardMarkup()
     for i in sorted(data):
