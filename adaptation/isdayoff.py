@@ -1,32 +1,44 @@
+"""Модуль для определения рабочих/выходных дней через API isdayoff.ru."""
+
 from enum import IntEnum
 from datetime import date, timedelta, datetime
 from pathlib import Path
+from typing import Optional, Dict, List
 import aiofiles
 import aiohttp
-from typing import Optional, Dict, List
+import logging
+
+
+logger = logging.getLogger("bot")
 
 
 class ServiceNotRespond(Exception):
+    """Исключение: сервис не отвечает или вернул неверный формат."""
     pass
 
 
 class DayType(IntEnum):
+    """Представление типа дня — рабочий или выходной."""
     WORKING = 0
     NOT_WORKING = 1
 
 
 class AsyncProdCalendar:
-    URL = 'https://isdayoff.ru/'
-    DATE_FORMAT = '%Y%m%d'
-    CACHE_FILE_FORMAT = 'isdayoff_{year}_{locale}.txt'
-    LOCALES = ('ru', 'ua', 'kz', 'by', 'us')
+    """Асинхронный клиент для получения информации о рабочих днях через isdayoff.ru."""
+    URL = "https://isdayoff.ru/"
+    DATE_FORMAT = "%Y%m%d"
+    CACHE_FILE_FORMAT = "isdayoff_{year}_{locale}.txt"
+    LOCALES = ("ru", "ua", "kz", "by", "us")
 
-    def __init__(self, locale: str = 'ru', cache: bool = True,
-                 cache_dir: str = 'cache/',
-                 freshness: timedelta = timedelta(days=30)):
+    def __init__(
+        self,
+        locale: str = "ru",
+        cache: bool = True,
+        cache_dir: str = "cache/",
+        freshness: timedelta = timedelta(days=30)):
+        """Инициализация календаря."""
         if locale not in self.LOCALES:
-            raise ValueError(f'Locale must be one of {self.LOCALES}')
-
+            raise ValueError(f"Locale должен быть одним из {self.LOCALES}")
         self.locale = locale
         self.cache = cache
         self.cache_dir = Path(cache_dir)
@@ -44,76 +56,84 @@ class AsyncProdCalendar:
         self._session = None
 
     async def check(self, day: date) -> DayType:
-        if not self.cache:
-            return await self._fetch_with_temp_session(day)
+        """Проверяет тип дня (рабочий/выходной)."""
+        logger.debug(f"Проверка дня: {day} ({self.locale})")
         year = day.year
         day_of_year = day.timetuple().tm_yday - 1
-        if year in self._memory_cache:
-            return DayType(self._memory_cache[year][day_of_year])
-        cache_file = self._get_cache_file_path(year)
-        try:
-            if await self._load_cache_file(cache_file):
+        if self.cache:
+            if year in self._memory_cache:
                 return DayType(self._memory_cache[year][day_of_year])
-        except (FileNotFoundError, ValueError):
-            pass
+            cache_file = self._get_cache_file_path(year)
+            try:
+                if await self._load_cache_file(cache_file):
+                    return DayType(self._memory_cache[year][day_of_year])
+            except (FileNotFoundError, ValueError):
+                logger.info(f"Кэш за {year} год не найден или устарел")
+        return await self._download_and_check(year, day_of_year)
 
-        return await self._download_with_temp_session(year, day_of_year)
+    async def _download_and_check(self, year: int, day_idx: int) -> DayType:
+        """Загружает данные за год и возвращает тип дня."""
+        logger.info(f"Загрузка данных за {year} год")
+        try:
+            data = await self._fetch_year_data(year)
+            self._memory_cache[year] = [int(c) for c in data]
+            await self._save_to_cache(year, data)
+            return DayType(self._memory_cache[year][day_idx])
+        except Exception as e:
+            logger.error(f"Не удалось загрузить данные за {year}: {e}", exc_info=True)
+            raise ServiceNotRespond(f"Ошибка при загрузке данных за {year} год")
 
-    async def _fetch_with_temp_session(self, day: date) -> DayType:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                    self.URL + day.strftime(self.DATE_FORMAT),
-                    params={'cc': self.locale}
-            ) as resp:
+    async def _fetch_year_data(self, year: int) -> str:
+        """Получает строку данных за год с API."""
+        if not self._session:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{self.URL}api/getdata", params={"year": year, "cc": self.locale}) as resp:
+                    if resp.status != 200:
+                        raise ServiceNotRespond(f"API не отвечает: {resp.status}")
+                    return await resp.text()
+        else:
+            async with self._session.get(
+                f"{self.URL}api/getdata", params={"year": year, "cc": self.locale}) as resp:
                 if resp.status != 200:
-                    raise ServiceNotRespond("API не отвечает")
-                return DayType(int(await resp.text()))
+                    raise ServiceNotRespond(f"API не отвечает: {resp.status}")
+                return await resp.text()
 
-    async def _download_with_temp_session(self, year: int,
-                                          day_idx: int) -> DayType:
-        self.cache_dir.mkdir(exist_ok=True, parents=True)
+    async def _save_to_cache(self, year: int, content: str):
+        """Сохраняет данные в файл кэша."""
         cache_file = self._get_cache_file_path(year)
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                    self.URL + 'api/getdata',
-                    params={'year': year, 'cc': self.locale}
-            ) as resp:
-                if resp.status != 200:
-                    raise ServiceNotRespond(
-                        f"Ошибка при загрузке данных за {year} год")
-                content = await resp.text()
-                self._memory_cache[year] = [int(c) for c in content]
-                async with aiofiles.open(cache_file, 'w') as f:
-                    await f.write(datetime.now().isoformat() + '\n')
-                    await f.write(content)
-        return DayType(self._memory_cache[year][day_idx])
+        self.cache_dir.mkdir(exist_ok=True, parents=True)
+        try:
+            async with aiofiles.open(cache_file, "w") as f:
+                await f.write(datetime.now().isoformat() + "\n")
+                await f.write(content)
+            logger.debug(f"Кэш за {year} сохранён")
+        except Exception as e:
+            logger.warning(f"Не удалось сохранить кэш за {year}: {e}")
 
     def _get_cache_file_path(self, year: int) -> Path:
         filename = self.CACHE_FILE_FORMAT.format(year=year, locale=self.locale)
         return self.cache_dir / filename
 
     async def _load_cache_file(self, cache_file: Path) -> bool:
+        """Загружает кэш из файла."""
         if not cache_file.exists():
             raise FileNotFoundError(f"Файл кэша не найден: {cache_file}")
-        async with aiofiles.open(cache_file, 'r') as f:
+        async with aiofiles.open(cache_file, "r") as f:
             first_line = await f.readline()
-            cache_date = datetime.fromisoformat(first_line.strip())
-            if cache_date + self.freshness < datetime.now():
-                raise ValueError("Кэш устарел")
+            try:
+                cache_date = datetime.fromisoformat(first_line.strip())
+                if cache_date + self.freshness < datetime.now():
+                    raise ValueError("Кэш устарел")
+            except ValueError as e:
+                logger.warning(f"Ошибка чтения кэша: {e}")
+                raise
             content = await f.read()
-            year = int(cache_file.stem.split('_')[1])
+            year = int(cache_file.stem.split("_")[1])
             self._memory_cache[year] = [int(c) for c in content]
+            logger.debug(f"Кэш за {year} загружен")
             return True
 
     async def today(self) -> DayType:
+        """Возвращает тип сегодняшнего дня."""
         return await self.check(date.today())
-
-    async def next(self, day: date, dtype: DayType) -> date:
-        while await self.check(day) != dtype:
-            day += timedelta(days=1)
-        return day
-
-    async def previous(self, day: date, dtype: DayType) -> date:
-        while await self.check(day) != dtype:
-            day -= timedelta(days=1)
-        return day
