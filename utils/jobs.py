@@ -8,39 +8,14 @@ from aiogram import Dispatcher
 from redis.asyncio import Redis, RedisError
 from typing import Optional, List, Tuple
 
-import config
+from config import config
 from adaptation.date_parser import get_todays_records
 from adaptation.sheets_api import GoogleSheetsProcessor
-from loader import db
+from loader import bot,db
 from utils import queries
 from utils.adapt_msg import ADAPTATION_MESSAGES, MessageConfig
 
 logger = logging.getLogger("bot")
-
-
-async def check(name: str, column_name: str, **kwargs) -> Optional[List[Tuple]]:
-    """Проверяет записи в БД по текущей дате"""
-    try:
-        data = await db.get_all(
-            await queries.get_value(value='*', table=name),
-            **kwargs)
-        if data:
-            for record in data:
-                await db.post(
-                    await queries.update_value(
-                        table=name,
-                        column_name=column_name,
-                        where_name='id'),
-                    value=True,
-                    id=record[0])
-            logger.info(f"Found and updated {len(data)} records in {name}")
-            return data
-        logger.debug(f"No matching records found in {name}")
-        return None
-    except Exception as e:
-        logger.error(f"Database check error in table {name}: {e}",
-                     exc_info=True)
-        return None
 
 
 async def get_now() -> dt:
@@ -59,11 +34,37 @@ async def get_region_channel(region: str) -> str:
         case 'North':
             return config.NORTH_CHANNEL_ID
         case _:
-            logger.warning(f"Unknown region: {region}. Using default channel.")
+            logger.warning(f"Неизвестный регион: {region}. "
+                           f"Используется канал по умолчанию.")
             return config.DEFAULT_CHANNEL_ID
 
 
-# преобразование datetime в читаемый формат
+async def check(name: str, column_name: str, **kwargs) -> Optional[List[Tuple]]:
+    """Проверяет записи в БД по текущей дате"""
+    try:
+        data = await db.get_all(
+            await queries.get_value(value='*', table=name),
+            **kwargs)
+        if data:
+            for record in data:
+                await db.post(
+                    await queries.update_value(
+                        table=name,
+                        column_name=column_name,
+                        where_name='id'),
+                    value=True,
+                    id=record[0])
+            logger.info(
+                f"Найдено и обновлено {len(data)} записей в таблице {name}")
+            return data
+        logger.debug(f"Записей не найдено в таблице {name}")
+        return None
+    except Exception as e:
+        logger.error(f"Ошибка проверки таблицы {name}: {e}",
+                     exc_info=True)
+        return None
+
+
 async def datetime_op(dt_start: str, dt_stop: str) -> tuple:
     """Преобразует строки дат в читаемый формат"""
     try:
@@ -72,14 +73,14 @@ async def datetime_op(dt_start: str, dt_stop: str) -> tuple:
         return (datetime_start.strftime('%d %B %Y'),
                 datetime_stop.strftime('%d %B %Y'))
     except ValueError as e:
-        logger.error(f"Date parsing error: {e}")
-        return "Invalid date", "Invalid date"
+        logger.error(f"Ошибка преобразования дат: {e}")
+        return "Неверная дата", "Неверная дата"
 
 
 # проверка на начало лучших практик
-async def check_bp_start(dp: Dispatcher):
+async def check_bp_start():
     """Проверяет начало новых лучших практик и отправляет уведомления"""
-    logger.info("Checking for new best practices")
+    logger.info("Проверка начала новых лучших практик")
     try:
         now = await get_now()
         data = await check(
@@ -101,22 +102,23 @@ async def check_bp_start(dp: Dispatcher):
                     f'<b>Дата окончания:</b>\n{stop}')
                 if await file.is_file():
                     async with aiofiles.open(file, 'rb') as photo:
-                        await dp.bot.send_photo(
+                        await bot.send_photo(
                             chat_id=chat_id,
                             photo=photo,
                             caption=message_text)
                 else:
-                    await dp.bot.send_message(
+                    await bot.send_message(
                         chat_id=chat_id,
                         text=message_text)
     except Exception as error:
-        logger.error('Schedule error for BP start: %s', error, exc_info=True)
+        logger.error('Ошибка при запуске BP: %s', error,
+                     exc_info=True)
 
 
 # проверка на начало мотивационных программ
-async def check_mp_start(dp: Dispatcher):
+async def check_mp_start():
     """Проверяет начало новых мотивационных программ и отправляет уведомления"""
-    logger.info("Checking for new motivational programs")
+    logger.info("Проверка начала мотивационных программ")
     try:
         now = await get_now()
         data = await check(
@@ -137,17 +139,18 @@ async def check_mp_start(dp: Dispatcher):
                     f'Регион: {str(i[3])}\n\n'
                     f'<b>Дата начала:</b>\n{start}\n\n'
                     f'<b>Дата окончания:</b>\n{stop}')
-                await dp.bot.send_message(
+                await bot.send_message(
                     chat_id=chat_id,
                     text=message_text)
     except Exception as error:
-        logger.error('Schedule error for MP start: %s', error, exc_info=True)
+        logger.error('Ошибка при запуске MP: %s', error,
+                     exc_info=True)
 
 
 # проверка на окончание лучших практик
-async def check_bp_stop(dp: Dispatcher):
+async def check_bp_stop():
     """Проверяет завершение лучших практик и отправляет уведомления"""
-    logger.info("Checking for finished best practices")
+    logger.info("Проверка завершения лучших практик")
     try:
         now = await get_now()
         data = await check(
@@ -159,17 +162,18 @@ async def check_bp_stop(dp: Dispatcher):
         if data:
             for i in data:
                 chat_id = await get_region_channel(i[1])
-                await dp.bot.send_message(
+                await bot.send_message(
                     chat_id=chat_id,
                     text=f'Лучшая практика <b>{str(i[2])}</b> закончилась!')
     except Exception as error:
-        logger.error('Schedule error for BP stop: %s', error, exc_info=True)
+        logger.error('Ошибка при завершении BP: %s', error,
+                     exc_info=True)
 
 
 # проверка на окончание мотивационных программ
-async def check_mp_stop(dp: Dispatcher):
+async def check_mp_stop():
     """Проверяет завершение мотивационных программ и отправляет уведомления"""
-    logger.info("Checking for finished motivational programs")
+    logger.info("Проверка завершения мотивационных программ")
     try:
         now = await get_now()
         data = await check(
@@ -181,29 +185,31 @@ async def check_mp_stop(dp: Dispatcher):
         if data:
             for i in data:
                 chat_id = await get_region_channel(i[3])
-                await dp.bot.send_message(
+                await bot.send_message(
                     chat_id=chat_id,
                     text=f'Мотивационная программа <b>{str(i[1])}</b> '
                          f'для <b>{str(i[2])}</b> '
                          f'в регионе <b>{str(i[3])}</b> закончилась!')
     except Exception as error:
-        logger.error('Schedule error for MP stop: %s', error, exc_info=True)
+        logger.error('Ошибка при завершении MP: %s', error,
+                     exc_info=True)
 
 
-async def transfer_gs_to_db(dp: Dispatcher):
+async def transfer_gs_to_db():
     """Переносит данные из Google Sheets в базу данных"""
-    logger.info("Starting GS to DB transfer")
+    logger.info("Начало переноса данных из Google Sheets в БД")
     try:
         processor = GoogleSheetsProcessor()
         await processor.all_data_to_db()
-        logger.info("Successfully completed GS to DB transfer")
+        logger.info("Успешное завершение переноса GS → DB")
     except Exception as error:
-        logger.error("GS to DB transfer failed: %s", error, exc_info=True)
+        logger.error("Ошибка переноса GS → DB: %s", error,
+                     exc_info=True)
 
 
-async def check_adaptation(dp: Dispatcher):
+async def check_adaptation():
     """Проверяет адаптационные задачи на сегодня и отправляет уведомления"""
-    logger.info("Checking adaptation tasks")
+    logger.info("Проверка адаптационных задач")
     try:
         today = dt.strftime(dt.now().date(), "%d.%m.%Y")
         data = await get_todays_records("adaptation", today)
@@ -222,16 +228,16 @@ async def check_adaptation(dp: Dispatcher):
                 if not mentor:
                     continue
                 if mentor[0] != 0:
-                    await send_message_to_mentor(dp, mentor, record, cnfg,
+                    await send_message_to_mentor(mentor, record, cnfg,
                                                  column)
                 else:
-                    await notify_cm(dp, mentor)
+                    await notify_cm(mentor)
     except Exception as error:
-        logger.error("Check adaptation error: %s", error, exc_info=True)
+        logger.error("Ошибка при проверке адаптации: %s", error,
+                     exc_info=True)
 
 
 async def send_message_to_mentor(
-        dp: Dispatcher,
         mentor: tuple,
         record: dict,
         cnfg: MessageConfig,
@@ -243,34 +249,35 @@ async def send_message_to_mentor(
         message_text = cnfg.text(mentor_name, intern_name)
         args = cnfg.keyboard_args(record, column)
         keyboard = await cnfg.keyboard(**args)
-        await dp.bot.send_message(
+        await bot.send_message(
             chat_id=mentor[0],
             text=message_text,
             reply_markup=keyboard)
         if cnfg.include_link:
-            await dp.bot.send_message(chat_id=mentor[0], text=cnfg.link)
+            await bot.send_message(chat_id=mentor[0], text=cnfg.link)
     except Exception as error:
-        logger.error(f"Failed to send message to mentor: {error}",
+        logger.error(f"Ошибка отправки сообщения ментору: {error}",
                      exc_info=True)
 
 
-async def notify_cm(dp: Dispatcher, mentor: tuple):
+async def notify_cm(mentor: tuple):
     """Уведомляет CityManager о проблемах с авторизацией ментора"""
     try:
         cm_tg_id = await db.get_one(
             await queries.get_value("tg_id", "users"),
             username=mentor[1])
         if cm_tg_id and cm_tg_id[0]:
-            await dp.bot.send_message(
+            await bot.send_message(
                 chat_id=cm_tg_id[0],
                 text=f"Ваш сотрудник {mentor[2]} не авторизован в боте. "
                      f"Обновление информации по адаптации его стажеров "
                      f"невозможно.")
     except Exception as error:
-        logger.error(f"Failed to notify CM: {error}", exc_info=True)
+        logger.error(f"Ошибка уведомления CityManager: {error}",
+                     exc_info=True)
 
 
-async def check_redis(dp: Dispatcher):
+async def check_redis():
     """Проверяет работоспособность Redis"""
     r = Redis(host=config.REDIS_HOST,
               password=config.REDIS_PASSWORD,
@@ -278,22 +285,23 @@ async def check_redis(dp: Dispatcher):
     try:
         await r.ping()
     except RedisError:
-        await dp.bot.send_message(
+        await bot.send_message(
             chat_id=config.ADMIN_ID,
             text='‼REDIS УПАЛ‼')
-        logger.error('Checking redis connection - FAIL')
+        logger.error('Проверка подключения к Redis — провалена')
 
 
-async def clear_logs(dp: Dispatcher):
+async def clear_logs():
     """Очищает файл логов"""
-    logger.info("Clearing log file")
+    logger.info("Очистка файла логов")
     try:
         file = AsyncPath(config.LOG_FILE)
         if await file.is_file():
             async with aiofiles.open(file, 'w') as f:
                 await f.write('')
-            logger.info("Log file cleared successfully")
+            logger.info("Файл логов успешно очищен")
         else:
-            logger.warning("Log file does not exist")
+            logger.warning("Файл логов не найден")
     except Exception as error:
-        logger.error('Failed to clear logs: %s', error, exc_info=True)
+        logger.error('Ошибка очистки логов: %s', error,
+                     exc_info=True)

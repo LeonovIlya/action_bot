@@ -1,19 +1,52 @@
-import os
-from dotenv import load_dotenv
+"""Модуль конфигурации телеграм-бота."""
 
-load_dotenv()
+from typing import Optional
+from pydantic_settings import BaseSettings
+from pydantic import Field
 
-BOT_TOKEN = os.getenv('BOT_TOKEN')
-G_API_FILE = os.getenv('G_API_FILE')
-G_API_EMAIL = os.getenv('G_API_EMAIL')
-G_API_LINK = os.getenv('G_API_LINK')
-DB_FILE = os.getenv('DB_FILE')
-LOG_FILE = os.getenv('LOG_FILE')
-REDIS_HOST = os.getenv('REDIS_HOST')
-REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
-MOSCOW_CHANNEL_ID = os.getenv('MOSCOW_CHANNEL_ID')
-CENTER_CHANNEL_ID = os.getenv('CENTER_CHANNEL_ID')
-NORTH_CHANNEL_ID = os.getenv('NORTH_CHANNEL_ID')
-DEFAULT_CHANNEL_ID = os.getenv('DEFAULT_CHANNEL_ID')
-ADMIN_ID = os.getenv('ADMIN_ID')
-RATE_LIMIT = os.getenv('RATE_LIMIT')
+
+class Settings(BaseSettings):
+    """Класс настроек приложения."""
+    # Telegram Bot
+    BOT_TOKEN: str = Field(..., description="Токен Telegram-бота")
+
+    # Google Sheets API
+    G_API_FILE: str = Field(..., description="Путь к JSON-файлу сервисного "
+                                             "аккаунта Google")
+    G_API_EMAIL: str = Field(..., description="Email сервисного аккаунта "
+                                              "Google")
+    G_API_LINK: str = Field(..., description="Ссылка на Google Таблицу")
+
+    # База данных
+    DB_FILE: str = Field(..., description="Путь к SQLite базе данных")
+
+    # Логирование
+    LOG_FILE: str = Field(..., description="Файл для записи логов")
+
+    # Redis
+    REDIS_HOST: str = Field("localhost", description="Хост Redis сервера")
+    REDIS_PASSWORD: Optional[str] = Field(None, description="Пароль от Redis "
+                                                            "(если есть)")
+
+    # Каналы Telegram
+    MOSCOW_CHANNEL_ID: str = Field(..., description="ID канала Москва")
+    CENTER_CHANNEL_ID: str = Field(..., description="ID канала Центр")
+    NORTH_CHANNEL_ID: str = Field(..., description="ID канала Север")
+    DEFAULT_CHANNEL_ID: str = Field(..., description="ID канала по умолчанию")
+
+    # Администратор
+    ADMIN_ID: int = Field(..., description="ID администратора бота")
+
+    # Ограничения скорости
+    RATE_LIMIT: float = Field(0.5, description="Ограничение запросов в "
+                                               "секунду")
+
+    class Config:
+        """Конфигурационный класс для настройки загрузки переменных
+        окружения."""
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+
+# Создаём экземпляр настроек
+config = Settings()

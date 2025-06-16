@@ -3,7 +3,7 @@ import hashlib
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 
-import config
+from config import config
 from loader import db
 from utils import decorators, keyboards, queries
 from utils.states import UserState

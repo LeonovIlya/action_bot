@@ -1,3 +1,5 @@
+"""Модуль обработчика событий адаптации новых сотрудников."""
+
 import aiofiles
 
 from aiogram import Dispatcher, types
@@ -14,6 +16,7 @@ from utils.states import UserState
 
 async def adapt_decline_choice(callback: types.CallbackQuery,
                                state: FSMContext, adapt_id: int):
+    """Предлагает пользователю выбрать причину отказа адаптации."""
     keyboard = await keyboards.get_adapt_decline()
     await callback.message.edit_text(text='Выберите причину отказа:')
     await callback.message.edit_reply_markup(reply_markup=keyboard)
@@ -23,6 +26,7 @@ async def adapt_decline_choice(callback: types.CallbackQuery,
 
 @decorators.error_handler_callback
 async def adapt_start_await(callback: types.CallbackQuery, state: FSMContext):
+    """Обрабатывает выбор действия при отложенной адаптации."""
     await callback.bot.answer_callback_query(callback.id)
     event, adapt_id, column_name, date_start = callback.data.split(':')[-4:]
     match event:
@@ -47,8 +51,10 @@ async def adapt_start_await(callback: types.CallbackQuery, state: FSMContext):
             await UserState.adapt_start_end.set()
 
 
+@decorators.error_handler_callback
 async def adapt_decline_get_date(callback: types.CallbackQuery,
                                  state: FSMContext):
+    """Получает выбранную пользователем причину отказа адаптации."""
     await callback.bot.answer_callback_query(callback.id)
     await callback.message.delete()
     button_text = str(next(
@@ -64,8 +70,10 @@ async def adapt_decline_get_date(callback: types.CallbackQuery,
     await UserState.adapt_decline_set.set()
 
 
-@decorators.error_handler_callback
+@decorators.error_handler_message
 async def adapt_decline_set(message: types.Message, state: FSMContext):
+    """Сохраняет дату увольнения и причину отказа адаптации в БД
+    и таблицах Google."""
     fired_day = await is_valid_date(message.text, False)
     if fired_day:
         await message.answer(text='Данные обновляются...')
@@ -98,6 +106,8 @@ async def adapt_decline_set(message: types.Message, state: FSMContext):
 
 @decorators.error_handler_message
 async def adapt_start_end(message: types.Message, state: FSMContext):
+    """Сохраняет дату выхода сотрудника на работу и рассчитывает этапы
+    адаптации."""
     date_1day = await is_valid_date(message.text, True)
     if date_1day:
         send_message = await message.answer(text='Данные обновляются...')
@@ -143,6 +153,7 @@ async def adapt_start_end(message: types.Message, state: FSMContext):
 
 @decorators.error_handler_callback
 async def adapt_1week(callback: types.CallbackQuery, state: FSMContext):
+    """Обработка событий на этапе 1 недели адаптации."""
     await callback.bot.answer_callback_query(callback.id)
     event, adapt_id = callback.data.split(':')[-2:]
     match event:
@@ -165,6 +176,7 @@ async def adapt_1week(callback: types.CallbackQuery, state: FSMContext):
 
 @decorators.error_handler_callback
 async def adapt_3week(callback: types.CallbackQuery, state: FSMContext):
+    """Обработка событий на этапе 3 недели адаптации."""
     await callback.bot.answer_callback_query(callback.id)
     event, adapt_id = callback.data.split(':')[-2:]
     match event:
@@ -176,6 +188,7 @@ async def adapt_3week(callback: types.CallbackQuery, state: FSMContext):
 
 @decorators.error_handler_callback
 async def adapt_3week_5(callback: types.CallbackQuery, state: FSMContext):
+    """Обработка событий через 3 недели и 5 дней адаптации"""
     await callback.bot.answer_callback_query(callback.id)
     event, adapt_id = callback.data.split(':')[-2:]
     match event:
@@ -190,6 +203,7 @@ async def adapt_3week_5(callback: types.CallbackQuery, state: FSMContext):
 
 @decorators.error_handler_callback
 async def adapt_6week(callback: types.CallbackQuery, state: FSMContext):
+    """Обработка событий на этапе 6 недели адаптации."""
     await callback.bot.answer_callback_query(callback.id)
     event, adapt_id = callback.data.split(':')[-2:]
     match event:
@@ -205,8 +219,9 @@ async def adapt_6week(callback: types.CallbackQuery, state: FSMContext):
 
 @decorators.error_handler_callback
 async def adapt_6week_3(callback: types.CallbackQuery):
+    """Обработка событий через 6 недель и 3 дней адаптации"""
     await callback.bot.answer_callback_query(callback.id)
-    event, adapt_id = callback.data.split(':')[-2:]
+    event, _ = callback.data.split(':')[-2:]
     match event:
         case 'yes':
             await callback.message.delete()
@@ -220,6 +235,7 @@ async def adapt_6week_3(callback: types.CallbackQuery):
 
 # компануем в обработчик
 def register_handlers_adaptation(dp: Dispatcher):
+    """Регистрирует все обработчики событий адаптации в диспетчере."""
     dp.register_callback_query_handler(
         adapt_start_await,
         text_startswith="adapt:start:",

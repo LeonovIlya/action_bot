@@ -5,7 +5,7 @@ from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.utils.exceptions import Throttled
 from typing import Union
 
-import config
+from config import config
 
 
 class ThrottlingMiddleware(BaseMiddleware):

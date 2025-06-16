@@ -3,7 +3,7 @@ import logging
 from loader import dp, scheduler, bot, db
 from utils.jobs import check_adaptation, transfer_gs_to_db
 from adaptation.handler import register_handlers_adaptation
-import config
+from config import config
 
 logger = logging.getLogger('bot')
 # отключение логов apscheduler
@@ -18,23 +18,36 @@ logging.basicConfig(filename=config.LOG_FILE,
 def set_scheduled_jobs():
     scheduler.add_job(func=check_adaptation,
                       trigger='interval',
-                      seconds=10,
-                      args=(dp,))
+                      seconds=10)
     scheduler.add_job(func=transfer_gs_to_db,
                       trigger='interval',
-                      seconds=60,
-                      args=(dp,))
+                      seconds=60)
 
 
 async def main():
     logger.info('>>> Starting bot')
     await db.create_connection()
+    register_handlers_adaptation(dp)
     set_scheduled_jobs()
     scheduler.start()
-    register_handlers_adaptation(dp)
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling()
+    finally:
+        await on_shutdown()
+
+
+async def on_shutdown():
+    logger.info('>>> Bot has been stopped!')
+    dp.stop_polling()
+    await db.close_connection()
+    await dp.storage.close()
+    await dp.storage.wait_closed()
+    await bot.session.close()
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    try:
+        logger.info("Бот запущен")
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        logger.info(">>> Бот остановлен вручную")

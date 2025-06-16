@@ -8,7 +8,8 @@ from typing import List, Dict, Optional, Any
 from redis.asyncio import Redis, RedisError
 from redis.exceptions import ConnectionError as RedisConnectionError
 from loader import db
-import config
+from config import config
+
 
 logger = logging.getLogger("bot")
 

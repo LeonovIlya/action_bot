@@ -5,24 +5,28 @@ from datetime import date, datetime, timedelta
 from typing import Optional, Union, List, Callable, Awaitable
 from adaptation.isdayoff import AsyncProdCalendar, DayType
 
+
 logger = logging.getLogger("bot")
 
 
 async def parse_date(date_str: str) -> Optional[date]:
     """Преобразует строку формата DD.MM.YYYY в объект date."""
     try:
-        parsed_date = datetime.strptime(date_str.strip(), "%d.%m.%Y").date()
+        parsed_date = datetime.strptime(
+            date_str.strip(), "%d.%m.%Y").date()
         logger.debug(f"Дата успешно распарсена: {parsed_date}")
         return parsed_date
     except (ValueError, TypeError) as e:
-        logger.error(f"Ошибка парсинга даты '{date_str}': {e}", exc_info=True)
+        logger.error(f"Ошибка парсинга даты '{date_str}': {e}",
+                     exc_info=True)
         raise ValueError(f"Ошибка парсинга даты: {str(e)}") from e
 
 
 async def add_working_days(
         start_date: date,
         days_to_add: Union[int, List[int]],
-        calendar: AsyncProdCalendar = AsyncProdCalendar(),
+        calendar: AsyncProdCalendar = AsyncProdCalendar(
+            locale="ru", cache=True, freshness=timedelta(days=30)),
         callback: Optional[Callable[[date, int, int], Awaitable[None]]] = None)\
         -> Union[str, List[str]]:
     """Добавляет указанное количество рабочих дней к дате, пропуская выходные

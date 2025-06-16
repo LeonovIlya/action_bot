@@ -13,11 +13,12 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, \
     InputMediaPhoto
 
 
-import config
+from config import config
 from loader import db
 from users.handlers import get_value_by_tgig
 from utils import decorators, keyboards, queries, jobs
 from utils.states import UserState
+
 
 locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
 

@@ -1,7 +1,7 @@
 import logging
 from aiogram.utils.executor import start_webhook
 
-import config
+from config import config
 from loader import dp, db, bot, scheduler
 from best_practice.handlers import register_handlers_best_practice
 from kpi.handlers import register_handlers_kpi

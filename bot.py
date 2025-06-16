@@ -1,8 +1,13 @@
+"""Основной модуль запуска Telegram-бота."""
+
 import asyncio
 import logging
 
-import config
+# Импорты из проекта
+from config import config
 from loader import dp, db, bot, scheduler
+
+# Обработчики различных модулей
 from admin_manager.handler import register_handlers_admin_manager
 from best_practice.handlers import register_handlers_best_practice
 from kpi.handlers import register_handlers_kpi
@@ -12,56 +17,80 @@ from ratings.handlers import register_handlers_ratings
 from shop.handlers import register_handlers_shop
 from tools.handlers import register_handlers_tools
 from users.handlers import register_handlers_users
-from utils.jobs import check_bp_start, check_bp_stop, check_mp_start, \
-    check_mp_stop, clear_logs, check_redis
 
+# Функции для расписаний
+from utils.jobs import (check_bp_start, check_bp_stop, check_mp_start,
+                        check_mp_stop, clear_logs, check_redis)
+
+# === Настройка логирования ===
 logger = logging.getLogger('bot')
-# отключение логов apscheduler
+
+# Отключение передачи логов от apscheduler наверх
 logging.getLogger('apscheduler.executors.default').propagate = False
-logging.basicConfig(filename=config.LOG_FILE,
-                    encoding='UTF-8',
-                    filemode='a',
-                    level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(name)s - %('
-                           'message)s')
+
+# Базовая настройка логирования
+logging.basicConfig(
+    filename=config.LOG_FILE,
+    encoding='UTF-8',
+    filemode='a',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 
 
 def set_scheduled_jobs():
-    scheduler.add_job(func=check_bp_stop,
-                      trigger='cron',
-                      hour=0,
-                      minute=3,
-                      args=(dp,))
-    scheduler.add_job(func=check_mp_stop,
-                      trigger='cron',
-                      hour=0,
-                      minute=4,
-                      args=(dp,))
-    scheduler.add_job(func=check_bp_start,
-                      trigger='cron',
-                      hour=0,
-                      minute=1,
-                      args=(dp,))
-    scheduler.add_job(func=check_mp_start,
-                      trigger='cron',
-                      hour=0,
-                      minute=2,
-                      args=(dp,))
-    scheduler.add_job(func=check_redis,
-                      trigger='interval',
-                      minutes=1,
-                      args=(dp,))
-    scheduler.add_job(func=clear_logs,
-                      trigger='cron',
-                      year='*',
-                      month='*',
-                      day='last',
-                      args=(dp,))
+    """Добавляет фоновые задачи в планировщик (scheduler)."""
+    # Проверка окончания BP
+    scheduler.add_job(
+        func=check_bp_stop,
+        trigger='cron',
+        hour=0,
+        minute=3)
+
+    # Проверка окончания MP
+    scheduler.add_job(
+        func=check_mp_stop,
+        trigger='cron',
+        hour=0,
+        minute=4)
+
+    # Проверка начала BP
+    scheduler.add_job(
+        func=check_bp_start,
+        trigger='cron',
+        hour=0,
+        minute=1)
+
+    # Проверка начала MP
+    scheduler.add_job(
+        func=check_mp_start,
+        trigger='cron',
+        hour=0,
+        minute=2)
+
+    # Проверка активности Redis
+    scheduler.add_job(
+        func=check_redis,
+        trigger='interval',
+        minutes=1)
+
+    # Очистка логов 1 раз в месяц
+    scheduler.add_job(
+        func=clear_logs,
+        trigger='cron',
+        day='last')
+
+    logger.info("Фоновые задачи успешно добавлены")
 
 
 async def main():
+    """Запускает основную логику бота: подключение к БД, регистрация хэндлеров
+     и запуск polling."""
     logger.info('>>> Starting bot')
+
+    # Подключение к базе данных
     await db.create_connection()
+
+    # Регистрация всех обработчиков
     register_handlers_admin_manager(dp)
     register_handlers_users(dp)
     register_handlers_best_practice(dp)
@@ -71,25 +100,39 @@ async def main():
     register_handlers_ratings(dp)
     register_handlers_shop(dp)
     register_handlers_tools(dp)
+
+    # Назначение фоновых задач
     set_scheduled_jobs()
     scheduler.start()
-    await dp.start_polling(bot)
+
+    # Запуск бота
+    try:
+        await dp.start_polling()
+    finally:
+        await on_shutdown()
 
 
 async def on_shutdown():
+    """Выполняет корректное завершение работы бота."""
+    logger.info('>>> Bot has been stopped!')
+
+    # Остановка опроса серверов Telegram
     dp.stop_polling()
+
+    # Закрытие соединения с БД
     await db.close_connection()
+
+    # Закрытие хранилища состояний
     await dp.storage.close()
     await dp.storage.wait_closed()
+
+    # Закрытие сессии бота
     await bot.session.close()
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(main())
-    except KeyboardInterrupt:
-        logger.info('>>> Bot has been stopped!')
-    finally:
-        on_shutdown()
-        loop.close()
+        logger.info("Бот запущен")
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        logger.info(">>> Бот остановлен вручную")

@@ -1,6 +1,7 @@
 """Модуль для работы с Google API"""
 
 import logging
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional, Union, Dict, List, Tuple
 from gspread_asyncio import AsyncioGspreadClientManager,\
@@ -10,12 +11,14 @@ from oauth2client.service_account import ServiceAccountCredentials
 from adaptation.isdayoff import AsyncProdCalendar
 from adaptation.workdays import add_working_days, parse_date
 
-from config import G_API_FILE, G_API_LINK
+from config import config
 from loader import db
 from utils import queries
 
-CREDENTIALS_PATH = G_API_FILE
-SPREADSHEET_URL = G_API_LINK
+
+CREDENTIALS_PATH = config.G_API_FILE
+SPREADSHEET_URL = config.G_API_LINK
+
 
 logger = logging.getLogger("bot")
 
@@ -80,7 +83,10 @@ class GoogleSheetsProcessor:
             raise ValueError("URL таблицы не может быть пустым")
         try:
             worksheet = await self._get_worksheet(spreadsheet_url)
-            async with AsyncProdCalendar() as calendar:
+            async with AsyncProdCalendar(
+                    locale="ru",
+                    cache=True,
+                    freshness=timedelta(days=30)) as calendar:
                 if row_limit:
                     all_data = await worksheet.get_values(
                         range_name=f'2:{row_limit}', major_dimension='ROWS')
