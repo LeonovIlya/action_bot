@@ -12,15 +12,13 @@ import config
 from adaptation.date_parser import get_todays_records
 from adaptation.sheets_api import GoogleSheetsProcessor
 from loader import db
-from utils import keyboards, queries
+from utils import queries
 from utils.adapt_msg import ADAPTATION_MESSAGES, MessageConfig
-
 
 logger = logging.getLogger("bot")
 
 
-async def check(name: str, column_name: str, **kwargs) -> Optional[
-    List[Tuple]]:
+async def check(name: str, column_name: str, **kwargs) -> Optional[List[Tuple]]:
     """Проверяет записи в БД по текущей дате"""
     try:
         data = await db.get_all(
@@ -224,7 +222,8 @@ async def check_adaptation(dp: Dispatcher):
                 if not mentor:
                     continue
                 if mentor[0] != 0:
-                    await send_message_to_mentor(dp, mentor, record, cnfg, column)
+                    await send_message_to_mentor(dp, mentor, record, cnfg,
+                                                 column)
                 else:
                     await notify_cm(dp, mentor)
     except Exception as error:
@@ -232,11 +231,11 @@ async def check_adaptation(dp: Dispatcher):
 
 
 async def send_message_to_mentor(
-    dp: Dispatcher,
-    mentor: tuple,
-    record: dict,
-    cnfg: MessageConfig,
-    column: str):
+        dp: Dispatcher,
+        mentor: tuple,
+        record: dict,
+        cnfg: MessageConfig,
+        column: str):
     """Отправляет сообщение ментору о задаче адаптации"""
     try:
         mentor_name = record.get("mentor_name").split(" ")[1]
@@ -264,10 +263,11 @@ async def notify_cm(dp: Dispatcher, mentor: tuple):
         if cm_tg_id and cm_tg_id[0]:
             await dp.bot.send_message(
                 chat_id=cm_tg_id[0],
-                text=f"Ваш сотрудник {mentor[2]} не авторизован в боте. Обновление информации по адаптации его стажеров невозможно.")
+                text=f"Ваш сотрудник {mentor[2]} не авторизован в боте. "
+                     f"Обновление информации по адаптации его стажеров "
+                     f"невозможно.")
     except Exception as error:
         logger.error(f"Failed to notify CM: {error}", exc_info=True)
-
 
 
 async def check_redis(dp: Dispatcher):
@@ -282,7 +282,6 @@ async def check_redis(dp: Dispatcher):
             chat_id=config.ADMIN_ID,
             text='‼REDIS УПАЛ‼')
         logger.error('Checking redis connection - FAIL')
-
 
 
 async def clear_logs(dp: Dispatcher):

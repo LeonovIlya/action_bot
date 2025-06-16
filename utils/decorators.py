@@ -14,9 +14,10 @@ def error_handler_message(function):
             await message.answer(
                 text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
             logging.error('Message handler error: %s , function: %s, user: %s, '
-                         'text: %s',
-                         repr(error), function.__name__,
-                         message.from_user.id, message.text)
+                          'text: %s',
+                          repr(error), function.__name__,
+                          message.from_user.id, message.text)
+
     return wrapper
 
 
@@ -29,7 +30,8 @@ def error_handler_callback(function):
             await callback.message.answer(
                 text='❗ Кажется что-то пошло не так!\nПопробуйте еще раз!')
             logging.error('Callback handler error: %s , function: %s, '
-                         'user: %s, data: %s',
-                         repr(error), function.__name__,
-                         callback.from_user.id, callback.data)
+                          'user: %s, data: %s',
+                          repr(error), function.__name__,
+                          callback.from_user.id, callback.data)
+
     return wrapper

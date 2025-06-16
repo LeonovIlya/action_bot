@@ -5,7 +5,6 @@ from datetime import date, datetime, timedelta
 from typing import Optional, Union, List, Callable, Awaitable
 from adaptation.isdayoff import AsyncProdCalendar, DayType
 
-
 logger = logging.getLogger("bot")
 
 
@@ -21,23 +20,26 @@ async def parse_date(date_str: str) -> Optional[date]:
 
 
 async def add_working_days(
-    start_date: date,
-    days_to_add: Union[int, List[int]],
-    calendar: AsyncProdCalendar = AsyncProdCalendar(),
-    callback: Optional[Callable[[date, int, int], Awaitable[None]]] = None) -> Union[str, List[str]]:
-    """Добавляет указанное количество рабочих дней к дате, пропуская выходные и праздники."""
+        start_date: date,
+        days_to_add: Union[int, List[int]],
+        calendar: AsyncProdCalendar = AsyncProdCalendar(),
+        callback: Optional[Callable[[date, int, int], Awaitable[None]]] = None)\
+        -> Union[str, List[str]]:
+    """Добавляет указанное количество рабочих дней к дате, пропуская выходные
+    и праздники. """
 
-    async def calculate_single_date(base_date: date, days: int) -> date:
+    async def calculate_single_date(base_date: date, quantity: int) -> date:
         current_date = base_date
         added_days = 0
-        while added_days < days:
+        while added_days < quantity:
             current_date += timedelta(days=1)
             day_type = await calendar.check(current_date)
             if day_type == DayType.WORKING:
                 added_days += 1
                 if callback:
-                    await callback(current_date, added_days, days)
+                    await callback(current_date, added_days, quantity)
         return current_date
+
     logger.info(f"Добавление рабочих дней к дате {start_date}: {days_to_add}")
     if isinstance(days_to_add, int):
         result_date = await calculate_single_date(start_date, days_to_add)

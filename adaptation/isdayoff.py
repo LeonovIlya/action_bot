@@ -8,7 +8,6 @@ import aiofiles
 import aiohttp
 import logging
 
-
 logger = logging.getLogger("bot")
 
 
@@ -24,18 +23,19 @@ class DayType(IntEnum):
 
 
 class AsyncProdCalendar:
-    """Асинхронный клиент для получения информации о рабочих днях через isdayoff.ru."""
+    """Асинхронный клиент для получения информации о рабочих днях через
+    isdayoff.ru."""
     URL = "https://isdayoff.ru/"
     DATE_FORMAT = "%Y%m%d"
     CACHE_FILE_FORMAT = "isdayoff_{year}_{locale}.txt"
     LOCALES = ("ru", "ua", "kz", "by", "us")
 
     def __init__(
-        self,
-        locale: str = "ru",
-        cache: bool = True,
-        cache_dir: str = "cache/",
-        freshness: timedelta = timedelta(days=30)):
+            self,
+            locale: str = "ru",
+            cache: bool = True,
+            cache_dir: str = "cache/",
+            freshness: timedelta = timedelta(days=30)):
         """Инициализация календаря."""
         if locale not in self.LOCALES:
             raise ValueError(f"Locale должен быть одним из {self.LOCALES}")
@@ -80,7 +80,8 @@ class AsyncProdCalendar:
             await self._save_to_cache(year, data)
             return DayType(self._memory_cache[year][day_idx])
         except Exception as e:
-            logger.error(f"Не удалось загрузить данные за {year}: {e}", exc_info=True)
+            logger.error(f"Не удалось загрузить данные за {year}: {e}",
+                         exc_info=True)
             raise ServiceNotRespond(f"Ошибка при загрузке данных за {year} год")
 
     async def _fetch_year_data(self, year: int) -> str:
@@ -88,13 +89,18 @@ class AsyncProdCalendar:
         if not self._session:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    f"{self.URL}api/getdata", params={"year": year, "cc": self.locale}) as resp:
+                        f"{self.URL}api/getdata", params={"year": year,
+                                                          "cc": self.locale}) \
+                        as resp:
                     if resp.status != 200:
-                        raise ServiceNotRespond(f"API не отвечает: {resp.status}")
+                        raise ServiceNotRespond(
+                            f"API не отвечает: {resp.status}")
                     return await resp.text()
         else:
             async with self._session.get(
-                f"{self.URL}api/getdata", params={"year": year, "cc": self.locale}) as resp:
+                    f"{self.URL}api/getdata", params={"year": year,
+                                                      "cc": self.locale}) \
+                    as resp:
                 if resp.status != 200:
                     raise ServiceNotRespond(f"API не отвечает: {resp.status}")
                 return await resp.text()

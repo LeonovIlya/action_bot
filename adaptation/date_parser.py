@@ -1,4 +1,5 @@
-"""Модуль для работы с кэшированием колонок таблиц и получения записей за сегодня."""
+"""Модуль для работы с кэшированием колонок таблиц и получения записей за
+сегодня. """
 
 import logging
 import json
@@ -9,12 +10,13 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from loader import db
 import config
 
-
 logger = logging.getLogger("bot")
 
 
 class AsyncRedisColumnCache:
-    """Класс для работы с кэшированием колонок таблиц и получения записей за сегодня."""
+    """Класс для работы с кэшированием колонок таблиц и получения записей за
+    сегодня. """
+
     def __init__(self, redis: Optional[Redis] = None):
         """Инициализация кэша для хранения информации о колонках."""
         self.redis = redis or Redis(
@@ -29,7 +31,8 @@ class AsyncRedisColumnCache:
         """Генерирует безопасный ключ для кэша."""
         if not isinstance(table_name, str):
             raise ValueError("Название таблицы должно быть строкой")
-        return f"async_column_cache:{hashlib.sha256(table_name.encode()).hexdigest()}"
+        return f"async_column_cache:" \
+               f"{hashlib.sha256(table_name.encode()).hexdigest()} "
 
     async def get_columns(self, table_name: str) -> List[str]:
         """Получает список колонок с префиксом 'date_' из кэша или БД."""
@@ -52,7 +55,8 @@ class AsyncRedisColumnCache:
         if not isinstance(columns, list):
             raise TypeError("Ожидается список названий колонок")
         self._table_columns_cache[table_name] = columns
-        if not isinstance(self.redis.connection_pool.connection_kwargs.get('password'), type(None)):
+        if not isinstance(self.redis.connection_pool.connection_kwargs.get('password'),
+                          type(None)):
             try:
                 await self.redis.setex(cache_key, 2592000, json.dumps(columns))
                 logger.debug(f"Колонки для {table_name} сохранены в Redis")
@@ -64,10 +68,12 @@ class AsyncRedisColumnCache:
         """Получает список колонок из базы данных."""
         try:
             rows = await db.get_all(f"PRAGMA table_info({table_name})")
-            logger.debug(f"Получено {len(rows)} колонок из таблицы {table_name}")
+            logger.debug(f"Получено {len(rows)} колонок из таблицы "
+                         f"{table_name}")
             return [row[1] for row in rows if row[1].startswith('date_')]
         except Exception as e:
-            logger.error(f"Не удалось получить колонки для {table_name}: {e}", exc_info=True)
+            logger.error(f"Не удалось получить колонки для {table_name}: {e}",
+                         exc_info=True)
             return []
 
     async def invalidate_cache(self, table_name: str) -> None:
@@ -89,10 +95,11 @@ class AsyncRedisColumnCache:
 
 
 async def get_todays_records(
-    table_name: str,
-    today: str,
-    cache: Optional[AsyncRedisColumnCache] = None) -> List[Dict[str, Any]]:
-    """Возвращает записи из таблицы, где одна из датированных колонок совпадает с today."""
+        table_name: str,
+        today: str,
+        cache: Optional[AsyncRedisColumnCache] = None) -> List[Dict[str, Any]]:
+    """Возвращает записи из таблицы, где одна из датированных колонок
+    совпадает с today. """
     logger.info(f"Получение записей за сегодня из таблицы '{table_name}'")
     own_cache = False
     if cache is None:
@@ -101,7 +108,8 @@ async def get_todays_records(
     try:
         date_columns = await cache.get_columns(table_name)
         if not date_columns:
-            logger.warning(f"В таблице '{table_name}' нет колонок с префиксом 'date_'")
+            logger.warning(f"В таблице '{table_name}' нет колонок с префиксом "
+                           f"'date_'")
             return []
         conditions = " OR ".join([f"`{col}` = ?" for col in date_columns])
         params = [today] * len(date_columns) + [False]
@@ -122,11 +130,13 @@ async def get_todays_records(
             if matched_columns:
                 record['matched_columns'] = matched_columns
                 result.append(record)
-        logger.info(f"Найдено {len(result)} записей в таблице '{table_name}' на сегодня")
+        logger.info(f"Найдено {len(result)} записей в таблице '{table_name}' "
+                    f"на сегодня")
         return result
 
     except Exception as e:
-        logger.error(f"Ошибка при получении записей за сегодня: {e}", exc_info=True)
+        logger.error(f"Ошибка при получении записей за сегодня: {e}",
+                     exc_info=True)
         return []
     finally:
         if own_cache:
