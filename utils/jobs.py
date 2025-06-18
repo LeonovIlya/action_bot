@@ -197,11 +197,11 @@ async def check_mp_stop():
 
 async def transfer_gs_to_db():
     """Переносит данные из Google Sheets в базу данных"""
-    logger.info("Начало переноса данных из Google Sheets в БД")
+    logger.info("Проверка данных для переноса строк из Google Sheets в  БД")
     try:
         processor = GoogleSheetsProcessor()
-        await processor.all_data_to_db()
-        logger.info("Успешное завершение переноса GS → DB")
+        result = await processor.all_data_to_db()
+        logger.info(f"Успешное завершение проверки: {result}")
     except Exception as error:
         logger.error("Ошибка переноса GS → DB: %s", error,
                      exc_info=True)

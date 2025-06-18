@@ -6,7 +6,7 @@ from typing import List, Union, Any, Optional
 
 from utils.create_tables import TABLES
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('bot')
 
 
 class BotDB:

@@ -18,7 +18,7 @@ logging.basicConfig(filename=config.LOG_FILE,
 def set_scheduled_jobs():
     scheduler.add_job(func=check_adaptation,
                       trigger='interval',
-                      seconds=10)
+                      seconds=30)
     scheduler.add_job(func=transfer_gs_to_db,
                       trigger='interval',
                       seconds=60)

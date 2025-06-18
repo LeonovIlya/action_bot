@@ -131,15 +131,18 @@ async def adapt_start_end(message: types.Message, state: FSMContext):
                 value='intern_name',
                 table='adaptation'),
             id=data['adapt_start_id'])
+        print(message.text, date_1week, date_3week, date_6week)
+        print(type(message.text), type(date_1week), type(date_3week), type(date_6week))
         gsp = GoogleSheetsProcessor()
         await gsp.update_cells_by_name(
             name=intern_name[0],
-            cell_data={'G': str(message.text)})
+            cell_data={'G': message.text, 'H': date_1week,
+                       'J': date_3week, 'K': date_6week})
         await send_message.edit_text(
             text='Дата выхода сотрудника на работу задана!\nНе забудь про '
                  'план адаптации! И помни - новичку нужно внимание и опытный '
                  'наставник!')
-        file = AsyncPath('./files/adaptation/test.txt')
+        file = AsyncPath('./files/adaptation/MR_adaptation_petcare.xlsx')
         if await file.is_file():
             await message.answer_chat_action(action='upload_document')
             async with aiofiles.open(file, 'rb') as file:
@@ -161,7 +164,7 @@ async def adapt_1week(callback: types.CallbackQuery, state: FSMContext):
             await callback.message.delete()
             await callback.message.answer(
                 text='Отлично! Давай еще раз вспомним про план адаптации!')
-            file = AsyncPath('./files/adaptation/test.txt')
+            file = AsyncPath('./files/adaptation/MR_adaptation_petcare.xlsx')
             if await file.is_file():
                 await callback.message.answer_chat_action(
                     action='upload_document')
@@ -218,7 +221,7 @@ async def adapt_6week(callback: types.CallbackQuery, state: FSMContext):
 
 
 @decorators.error_handler_callback
-async def adapt_6week_3(callback: types.CallbackQuery):
+async def adapt_6week_3(callback: types.CallbackQuery, state: FSMContext):
     """Обработка событий через 6 недель и 3 дней адаптации"""
     await callback.bot.answer_callback_query(callback.id)
     event, _ = callback.data.split(':')[-2:]

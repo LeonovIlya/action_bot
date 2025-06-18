@@ -59,6 +59,5 @@ async def add_working_days(
             logger.debug(f"Добавлено {days} дней → {formatted_result}")
         return formatted_results
     else:
-        error_msg = "days_to_add должен быть int или list[int]"
-        logger.error(error_msg)
-        raise TypeError(error_msg)
+        logger.error("days_to_add должен быть int или list[int]")
+        raise TypeError("days_to_add должен быть int или list[int]")

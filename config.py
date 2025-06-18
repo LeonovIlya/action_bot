@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     G_API_EMAIL: str = Field(..., description="Email сервисного аккаунта "
                                               "Google")
     G_API_LINK: str = Field(..., description="Ссылка на Google Таблицу")
+    G_TEST_LINK: str = Field(..., description="Ссылка на Тест среза знаний")
+    G_SURVEY_LINK: str = Field(..., description="Ссылка на Опрос "
+                                                "удовлетворенности")
 
     # База данных
     DB_FILE: str = Field(..., description="Путь к SQLite базе данных")

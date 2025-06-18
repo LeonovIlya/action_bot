@@ -4,6 +4,7 @@ from utils import keyboards
 from typing import Dict, Any, Callable, Awaitable, Optional
 from aiogram.types import InlineKeyboardMarkup
 
+from config import config
 
 class MessageConfig:
     """Конфигурационный класс для настройки сообщений и клавиатур"""
@@ -47,7 +48,7 @@ ADAPTATION_MESSAGES: Dict[str, MessageConfig] = {
         keyboard=keyboards.get_adapt_3week,
         keyboard_args=lambda record, _: {"record_id": record["id"]},
         include_link=True,
-        link='<a href="http://ya.ru/">ССЫЛКА НА ТЕСТ</a>'),
+        link=f'<a href="{config.G_TEST_LINK}">ССЫЛКА НА ТЕСТ</a>'),
     "date_3week_5": MessageConfig(
         text=lambda name, intern: f"{name}, привет! {intern} прошел(-ла) тест "
                                   f"среза знаний? Не забудь, это важный этап, "
@@ -67,12 +68,12 @@ ADAPTATION_MESSAGES: Dict[str, MessageConfig] = {
         keyboard=keyboards.get_adapt_6week,
         keyboard_args=lambda record, _: {"record_id": record["id"]},
         include_link=True,
-        link='<a href="http://ya.ru/">ССЫЛКА НА ОПРОС</a>'),
+        link=f'<a href="{config.G_SURVEY_LINK}">ССЫЛКА НА ОПРОС</a>'),
     "date_6week_3": MessageConfig(
         text=lambda name, intern: f"{name}, привет! Помни, что нам важно мнение"
-                                  f" новичка о процессе адаптации. Ты направила"
-                                  f" опрос удовлетворённости?",
+                                  f" новичка о процессе адаптации. Ты "
+                                  f"направил(-а) опрос удовлетворённости?",
         keyboard=keyboards.get_adapt_6week_3,
         keyboard_args=lambda record, _: {"record_id": record["id"]},
         include_link=True,
-        link='<a href="http://ya.ru/">ССЫЛКА НА ОПРОС</a>')}
+        link=f'<a href="{config.G_SURVEY_LINK}">ССЫЛКА НА ОПРОС</a>')}
